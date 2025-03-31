@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/MainLayout";
@@ -46,103 +47,103 @@ const OrderDetail = () => {
   
   useEffect(() => {
     const fetchOrderData = async () => {
+      if (!id) {
+        setLoading(false);
+        return;
+      }
+      
       try {
-        // Try to fetch from Supabase first
-        if (id) {
-          const { data: orderData, error: orderError } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', id)
+        setLoading(true);
+        
+        // Fetch the order data
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (orderError) throw orderError;
+        
+        if (!orderData) {
+          console.error("Order not found:", id);
+          setLoading(false);
+          return;
+        }
+        
+        // Map the order data to our Order type
+        const mappedOrder: Order = {
+          id: orderData.id,
+          customer_id: orderData.customer_id,
+          agent_id: orderData.agent_id,
+          service_type: "Delivery", // Default since this field isn't in the DB
+          delivery_address: orderData.delivery_address,
+          status: orderData.status as Order['status'],
+          base_charge: orderData.amount || 0,
+          service_charge: (orderData.amount || 0) * 0.1,
+          delivery_charge: orderData.delivery_fee || 0,
+          total_amount: (orderData.amount || 0) + (orderData.delivery_fee || 0) + ((orderData.amount || 0) * 0.1),
+          created_at: orderData.created_at,
+          updated_at: orderData.updated_at,
+          instructions: orderData.description,
+          customer_name: orderData.customer_name,
+          customer_contact: orderData.customer_contact,
+        };
+        
+        setOrder(mappedOrder);
+        
+        // If there's an agent assigned, fetch their details
+        if (orderData.agent_id) {
+          const { data: agentData, error: agentError } = await supabase
+            .from('agents')
+            .select('id, full_name, phone_number, profile_picture, location, agent_code, online_status')
+            .eq('id', orderData.agent_id)
             .single();
-
-          if (orderData && !orderError) {
-            // Map Supabase order data to our Order type
-            setOrder({
-              id: orderData.id,
-              customer_id: orderData.customer_id,
-              agent_id: orderData.agent_id,
-              service_type: "Delivery", // Default to "Delivery" as service_type doesn't exist in DB
-              delivery_address: orderData.delivery_address,
-              status: orderData.status as "Pending" | "Assigned" | "In Transit" | "Delivered" | "Cancelled",
-              base_charge: orderData.amount || 200,
-              service_charge: orderData.delivery_fee * 0.1 || 20,
-              delivery_charge: orderData.delivery_fee || 60,
-              total_amount: (orderData.amount || 200) + (orderData.delivery_fee || 60) + (orderData.delivery_fee * 0.1 || 20),
-              created_at: orderData.created_at,
-              updated_at: orderData.updated_at,
-              instructions: orderData.description,
-              customer_name: orderData.customer_name,
-              customer_contact: orderData.customer_contact
-            });
-
-            // If agent_id exists, fetch agent data
-            if (orderData.agent_id) {
-              const { data: agentData } = await supabase
-                .from('agents')
-                .select('*')
-                .eq('id', orderData.agent_id)
-                .single();
-
-              if (agentData) {
-                setAgent({
-                  id: agentData.id,
-                  full_name: agentData.full_name,
-                  phone_number: agentData.phone_number,
-                  online_status: agentData.online_status || false,
-                  current_location: agentData.location,
-                  rating: 4.8, // Default rating
-                  profile_picture: agentData.profile_picture,
-                });
-              }
-            }
             
-            setLoading(false);
-            return;
+          if (!agentError && agentData) {
+            const mappedAgent: Agent = {
+              id: agentData.id,
+              full_name: agentData.full_name,
+              phone_number: agentData.phone_number,
+              profile_picture: agentData.profile_picture || "",
+              online_status: agentData.online_status || false,
+              current_location: agentData.location || "Unknown",
+              rating: 4.8, // Default rating
+              agent_code: agentData.agent_code,
+            };
+            
+            setAgent(mappedAgent);
           }
         }
-
-        // Fallback to mock data if Supabase fetch fails
-        // Mock data - will be replaced with Supabase query
-        setTimeout(() => {
-          const mockOrder: Order = {
-            id: id || "1",
-            customer_id: "123",
-            agent_id: "456",
-            service_type: "Delivery",
-            delivery_address: "Eldoret CBD",
-            status: "In Transit",
-            base_charge: 200,
-            service_charge: 20,
-            delivery_charge: 60,
-            total_amount: 280,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            instructions: "Please be careful with the package, it's fragile.",
-            customer_name: "John Doe",
-            customer_contact: "0712345678"
-          };
-          
-          const mockAgent: Agent = {
-            id: "456",
-            full_name: "John Doe",
-            phone_number: "0712345678",
-            online_status: true,
-            current_location: "Eldoret CBD",
-            rating: 4.8,
-            profile_picture: "",
-          };
-          
-          setOrder(mockOrder);
-          setAgent(mockAgent);
-          setLoading(false);
-        }, 500);
       } catch (error) {
         console.error("Error fetching order data:", error);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchOrderData();
+    
+    // Set up real-time listener for order updates
+    const channel = supabase
+      .channel('order-updates')
+      .on('postgres_changes', 
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'orders',
+          filter: `id=eq.${id}`,
+        }, 
+        () => {
+          console.log('Order updated, refreshing data...');
+          fetchOrderData();
+        }
+      )
+      .subscribe();
+    
+    // Cleanup function
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   const getStatusColor = (status: Order['status']) => {
@@ -172,7 +173,7 @@ const OrderDetail = () => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
   
-  const handleSendTip = () => {
+  const handleSendTip = async () => {
     if (!tipAmount || isNaN(Number(tipAmount)) || Number(tipAmount) <= 0) {
       toast({
         title: "Invalid amount",
@@ -182,13 +183,41 @@ const OrderDetail = () => {
       return;
     }
     
-    // Mock API call - will be replaced with M-Pesa integration and Supabase
-    toast({
-      title: "Tip sent successfully",
-      description: `KES ${tipAmount} has been sent to ${agent?.full_name}`,
-    });
+    if (!agent || !order) {
+      toast({
+        title: "Cannot send tip",
+        description: "Missing agent or order information",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    setTipAmount("");
+    try {
+      // Insert tip record into database
+      const { error } = await supabase
+        .from('tips')
+        .insert({
+          agent_id: agent.id,
+          customer_id: order.customer_id,
+          amount: Number(tipAmount)
+        });
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Tip sent successfully",
+        description: `KES ${tipAmount} has been sent to ${agent.full_name}`,
+      });
+      
+      setTipAmount("");
+    } catch (err) {
+      console.error("Error sending tip:", err);
+      toast({
+        title: "Failed to send tip",
+        description: "There was an error processing your tip. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   // Create a string representation of the order for QR code
@@ -206,7 +235,10 @@ const OrderDetail = () => {
     return (
       <MainLayout title="Order Details">
         <div className="max-w-3xl mx-auto text-center py-10">
-          <p>Loading order details...</p>
+          <div className="flex items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-doorrush-primary border-t-transparent"></div>
+            <p className="ml-2">Loading order details...</p>
+          </div>
         </div>
       </MainLayout>
     );
@@ -227,7 +259,7 @@ const OrderDetail = () => {
   }
 
   return (
-    <MainLayout title={`Order #${order.id}`} showBackButton={true}>
+    <MainLayout title={`Order #${order.id.substring(0, 8)}`} showBackButton={true}>
       <div className="max-w-3xl mx-auto animate-fade-in pb-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card className="md:col-span-2">
@@ -311,7 +343,7 @@ const OrderDetail = () => {
             </CardContent>
           </Card>
           
-          {agent && (
+          {agent ? (
             <Card>
               <CardContent className="p-6">
                 <h2 className="font-semibold mb-4">Delivery Agent</h2>
@@ -395,6 +427,15 @@ const OrderDetail = () => {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <h2 className="font-semibold mb-4">Delivery Agent</h2>
+                <p className="text-muted-foreground">
+                  No agent has been assigned to this order yet.
+                </p>
               </CardContent>
             </Card>
           )}

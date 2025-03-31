@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +41,7 @@ import {
   Agent
 } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchOnlineAgents, subscribeToAgentStatusChanges } from "@/utils/agentUtils";
 
 const PlaceOrder = () => {
   const navigate = useNavigate();
@@ -60,34 +60,13 @@ const PlaceOrder = () => {
   const [autoAssign, setAutoAssign] = useState(true);
   
   useEffect(() => {
-    // Fetch agents that are online from Supabase
-    const fetchAgents = async () => {
+    const loadAgents = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        const { data, error } = await supabase
-          .from('agents')
-          .select('id, full_name, phone_number, profile_picture, location, agent_code, online_status')
-          .eq('online_status', true);
-          
-        if (error) {
-          throw error;
-        }
-        
-        // Map the data to match our Agent type
-        const formattedAgents: Agent[] = data.map(agent => ({
-          id: agent.id,
-          full_name: agent.full_name,
-          phone_number: agent.phone_number,
-          profile_picture: agent.profile_picture || "",
-          online_status: agent.online_status,
-          current_location: agent.location || "Unknown",
-          rating: 4.5, // Default rating since it's not in the database
-          agent_code: agent.agent_code,
-        }));
-        
-        setAgents(formattedAgents);
+        const onlineAgents = await fetchOnlineAgents();
+        setAgents(onlineAgents);
       } catch (err) {
         console.error("Error fetching agents:", err);
         setError("Failed to load available agents. Please try again.");
@@ -96,30 +75,13 @@ const PlaceOrder = () => {
       }
     };
     
-    fetchAgents();
+    loadAgents();
     
-    // Set up real-time listener for agent status changes
-    const agentSubscription = supabase
-      .channel('public:agents')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'agents',
-          filter: 'online_status=eq.true'
-        }, 
-        (payload) => {
-          console.log('Change received!', payload);
-          // Refresh the agents list when changes occur
-          fetchAgents();
-        }
-      )
-      .subscribe();
-      
-    // Cleanup function
-    return () => {
-      supabase.removeChannel(agentSubscription);
-    };
+    const cleanup = subscribeToAgentStatusChanges(() => {
+      loadAgents();
+    });
+    
+    return cleanup;
   }, []);
 
   const handleServiceTypeChange = (value: string) => {
@@ -167,18 +129,40 @@ const PlaceOrder = () => {
 
   const handleSubmitOrder = async () => {
     try {
-      // Logic to submit order to Supabase will be added here
+      const orderToSubmit = {
+        customer_id: "customer-id",
+        customer_name: "Customer Name",
+        customer_contact: "0712345678",
+        agent_id: autoAssign ? null : orderData.agentId,
+        delivery_address: orderData.deliveryAddress,
+        amount: orderData.baseCharge,
+        delivery_fee: calculateDeliveryCharge(orderData.deliveryAddress),
+        description: orderData.instructions || `${orderData.serviceType} order`,
+        status: "Pending"
+      };
+      
+      const { data, error } = await supabase
+        .from('orders')
+        .insert(orderToSubmit)
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
       
       toast({
         title: "Order placed successfully",
         description: "An agent will be assigned to your order shortly",
       });
       
-      // Navigate to order confirmation
       navigate("/order-confirmation", { 
         state: { 
-          orderId: "ORDER" + Math.floor(Math.random() * 10000),
-          orderData,
+          orderId: data.id,
+          orderData: {
+            ...orderData,
+            serviceType: orderData.serviceType
+          },
           deliveryCharge: calculateDeliveryCharge(orderData.deliveryAddress),
           serviceCharge: calculateServiceCharge(orderData.baseCharge),
           totalAmount: calculateTotalAmount(
@@ -198,7 +182,6 @@ const PlaceOrder = () => {
     }
   };
 
-  // Calculate charges
   const deliveryCharge = calculateDeliveryCharge(orderData.deliveryAddress);
   const serviceCharge = calculateServiceCharge(orderData.baseCharge);
   const totalAmount = calculateTotalAmount(orderData.baseCharge, serviceCharge, deliveryCharge);
@@ -208,7 +191,6 @@ const PlaceOrder = () => {
       <div className="max-w-3xl mx-auto animate-fade-in">
         <h1 className="text-2xl font-bold mb-6">Place New Order</h1>
         
-        {/* Step indicator */}
         <div className="flex items-center mb-6">
           <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 1 ? 'bg-doorrush-primary text-white' : 'bg-muted'}`}>
             1
