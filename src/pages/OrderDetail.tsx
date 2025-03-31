@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/MainLayout";
@@ -57,13 +56,14 @@ const OrderDetail = () => {
             .single();
 
           if (orderData && !orderError) {
+            // Map Supabase order data to our Order type
             setOrder({
               id: orderData.id,
               customer_id: orderData.customer_id,
               agent_id: orderData.agent_id,
-              service_type: orderData.service_type || 'Delivery',
+              service_type: "Delivery", // Default to "Delivery" as service_type doesn't exist in DB
               delivery_address: orderData.delivery_address,
-              status: orderData.status,
+              status: orderData.status as "Pending" | "Assigned" | "In Transit" | "Delivered" | "Cancelled",
               base_charge: orderData.amount || 200,
               service_charge: orderData.delivery_fee * 0.1 || 20,
               delivery_charge: orderData.delivery_fee || 60,
@@ -71,6 +71,8 @@ const OrderDetail = () => {
               created_at: orderData.created_at,
               updated_at: orderData.updated_at,
               instructions: orderData.description,
+              customer_name: orderData.customer_name,
+              customer_contact: orderData.customer_contact
             });
 
             // If agent_id exists, fetch agent data
@@ -116,6 +118,8 @@ const OrderDetail = () => {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             instructions: "Please be careful with the package, it's fragile.",
+            customer_name: "John Doe",
+            customer_contact: "0712345678"
           };
           
           const mockAgent: Agent = {

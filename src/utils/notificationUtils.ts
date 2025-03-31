@@ -1,4 +1,6 @@
 
+import { supabase } from "@/integrations/supabase/client";
+
 /**
  * Plays a notification sound
  * @param type The type of notification to play

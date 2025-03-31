@@ -1,4 +1,3 @@
-
 // Customer type
 export type Customer = {
   id: string;
@@ -35,6 +34,8 @@ export type Order = {
   total_amount: number;
   created_at: string;
   updated_at: string;
+  customer_name?: string;
+  customer_contact?: string;
 };
 
 // Notification type
