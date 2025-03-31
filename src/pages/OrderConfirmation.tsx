@@ -5,6 +5,7 @@ import MainLayout from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Check, Clock, QrCode, Home } from "lucide-react";
 import QRCode from "qrcode.react";
+import { supabase } from "@/integrations/supabase/client";
 
 const OrderConfirmation = () => {
   const location = useLocation();
@@ -21,6 +22,12 @@ const OrderConfirmation = () => {
         totalAmount: location.state.totalAmount,
         status: "Pending",
         created_at: new Date().toISOString(),
+      });
+
+      // Play a notification sound for order placed
+      const audio = new Audio('/notification.mp3');
+      audio.play().catch(error => {
+        console.log("Audio playback error (may be expected if user hasn't interacted with page):", error);
       });
     } else {
       navigate("/dashboard");
@@ -41,7 +48,7 @@ const OrderConfirmation = () => {
   });
 
   return (
-    <MainLayout>
+    <MainLayout title="Order Confirmation" showBackButton={false}>
       <div className="max-w-lg mx-auto text-center py-8 animate-fade-in">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-6 animate-pulse-scale">
           <Check className="h-8 w-8 text-green-600" />

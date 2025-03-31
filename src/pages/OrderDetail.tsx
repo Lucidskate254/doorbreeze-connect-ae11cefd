@@ -32,6 +32,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Order, Agent } from "@/types";
 import QRCode from "qrcode.react";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const OrderDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -44,38 +46,99 @@ const OrderDetail = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   
   useEffect(() => {
-    // Mock data - will be replaced with Supabase query
-    setTimeout(() => {
-      const mockOrder: Order = {
-        id: id || "1",
-        customer_id: "123",
-        agent_id: "456",
-        service_type: "Delivery",
-        delivery_address: "Eldoret CBD",
-        status: "In Transit",
-        base_charge: 200,
-        service_charge: 20,
-        delivery_charge: 60,
-        total_amount: 280,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        instructions: "Please be careful with the package, it's fragile.",
-      };
-      
-      const mockAgent: Agent = {
-        id: "456",
-        full_name: "John Doe",
-        phone_number: "0712345678",
-        online_status: true,
-        current_location: "Eldoret CBD",
-        rating: 4.8,
-        profile_picture: "",
-      };
-      
-      setOrder(mockOrder);
-      setAgent(mockAgent);
-      setLoading(false);
-    }, 500);
+    const fetchOrderData = async () => {
+      try {
+        // Try to fetch from Supabase first
+        if (id) {
+          const { data: orderData, error: orderError } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+          if (orderData && !orderError) {
+            setOrder({
+              id: orderData.id,
+              customer_id: orderData.customer_id,
+              agent_id: orderData.agent_id,
+              service_type: orderData.service_type || 'Delivery',
+              delivery_address: orderData.delivery_address,
+              status: orderData.status,
+              base_charge: orderData.amount || 200,
+              service_charge: orderData.delivery_fee * 0.1 || 20,
+              delivery_charge: orderData.delivery_fee || 60,
+              total_amount: (orderData.amount || 200) + (orderData.delivery_fee || 60) + (orderData.delivery_fee * 0.1 || 20),
+              created_at: orderData.created_at,
+              updated_at: orderData.updated_at,
+              instructions: orderData.description,
+            });
+
+            // If agent_id exists, fetch agent data
+            if (orderData.agent_id) {
+              const { data: agentData } = await supabase
+                .from('agents')
+                .select('*')
+                .eq('id', orderData.agent_id)
+                .single();
+
+              if (agentData) {
+                setAgent({
+                  id: agentData.id,
+                  full_name: agentData.full_name,
+                  phone_number: agentData.phone_number,
+                  online_status: agentData.online_status || false,
+                  current_location: agentData.location,
+                  rating: 4.8, // Default rating
+                  profile_picture: agentData.profile_picture,
+                });
+              }
+            }
+            
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Fallback to mock data if Supabase fetch fails
+        // Mock data - will be replaced with Supabase query
+        setTimeout(() => {
+          const mockOrder: Order = {
+            id: id || "1",
+            customer_id: "123",
+            agent_id: "456",
+            service_type: "Delivery",
+            delivery_address: "Eldoret CBD",
+            status: "In Transit",
+            base_charge: 200,
+            service_charge: 20,
+            delivery_charge: 60,
+            total_amount: 280,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            instructions: "Please be careful with the package, it's fragile.",
+          };
+          
+          const mockAgent: Agent = {
+            id: "456",
+            full_name: "John Doe",
+            phone_number: "0712345678",
+            online_status: true,
+            current_location: "Eldoret CBD",
+            rating: 4.8,
+            profile_picture: "",
+          };
+          
+          setOrder(mockOrder);
+          setAgent(mockAgent);
+          setLoading(false);
+        }, 500);
+      } catch (error) {
+        console.error("Error fetching order data:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchOrderData();
   }, [id]);
 
   const getStatusColor = (status: Order['status']) => {
@@ -130,12 +193,14 @@ const OrderDetail = () => {
     serviceType: order.service_type,
     deliveryAddress: order.delivery_address,
     amount: order.total_amount,
+    customerName: order.customer_name || "Customer",
+    customerPhone: order.customer_contact || "Phone",
     date: order.created_at,
   }) : "";
 
   if (loading) {
     return (
-      <MainLayout>
+      <MainLayout title="Order Details">
         <div className="max-w-3xl mx-auto text-center py-10">
           <p>Loading order details...</p>
         </div>
@@ -145,7 +210,7 @@ const OrderDetail = () => {
   
   if (!order) {
     return (
-      <MainLayout>
+      <MainLayout title="Order Not Found">
         <div className="max-w-3xl mx-auto text-center py-10">
           <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
           <Button onClick={() => navigate('/order-history')}>
@@ -158,20 +223,8 @@ const OrderDetail = () => {
   }
 
   return (
-    <MainLayout>
-      <div className="max-w-3xl mx-auto animate-fade-in">
-        <div className="flex items-center mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="mr-2"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft size={16} />
-          </Button>
-          <h1 className="text-2xl font-bold">Order #{order.id}</h1>
-        </div>
-        
+    <MainLayout title={`Order #${order.id}`} showBackButton={true}>
+      <div className="max-w-3xl mx-auto animate-fade-in pb-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <Card className="md:col-span-2">
             <CardContent className="p-6">
@@ -275,7 +328,14 @@ const OrderDetail = () => {
                   </div>
                   <div className="ml-3">
                     <p className="font-medium">{agent.full_name}</p>
-                    <div className="flex items-center text-sm text-muted-foreground">
+                    <div className="flex items-center text-sm">
+                      <span className={cn(
+                        "inline-block w-2 h-2 rounded-full mr-1",
+                        agent.online_status ? "bg-green-500" : "bg-red-500"
+                      )}></span>
+                      <span className="text-muted-foreground mr-2">
+                        {agent.online_status ? "Online" : "Offline"}
+                      </span>
                       <span>★ {agent.rating}</span>
                     </div>
                   </div>
