@@ -31,6 +31,7 @@ import {
   Info,
   MapPin,
   RadioTower,
+  AlertCircle,
 } from "lucide-react";
 import { 
   ELDORET_LOCATIONS, 
@@ -40,6 +41,7 @@ import {
   calculateTotalAmount,
   Agent
 } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 
 const PlaceOrder = () => {
   const navigate = useNavigate();
@@ -53,39 +55,71 @@ const PlaceOrder = () => {
     agentId: "",
   });
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [autoAssign, setAutoAssign] = useState(true);
   
   useEffect(() => {
-    // Mock data - will be replaced with Supabase query
-    setAgents([
-      {
-        id: "1",
-        full_name: "John Doe",
-        phone_number: "0712345678",
-        online_status: true,
-        current_location: "Eldoret CBD",
-        rating: 4.8,
-        profile_picture: "",
-      },
-      {
-        id: "2",
-        full_name: "Jane Smith",
-        phone_number: "0723456789",
-        online_status: true,
-        current_location: "Langas",
-        rating: 4.6,
-        profile_picture: "",
-      },
-      {
-        id: "3",
-        full_name: "David Kimani",
-        phone_number: "0734567890",
-        online_status: false,
-        current_location: "Annex",
-        rating: 4.9,
-        profile_picture: "",
-      },
-    ]);
+    // Fetch agents that are online from Supabase
+    const fetchAgents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const { data, error } = await supabase
+          .from('agents')
+          .select('id, full_name, phone_number, profile_picture, location, agent_code, online_status, rating')
+          .eq('online_status', true);
+          
+        if (error) {
+          throw error;
+        }
+        
+        // Map the data to match our Agent type
+        const formattedAgents: Agent[] = data.map(agent => ({
+          id: agent.id,
+          full_name: agent.full_name,
+          phone_number: agent.phone_number,
+          profile_picture: agent.profile_picture || "",
+          online_status: agent.online_status,
+          current_location: agent.location || "Unknown",
+          rating: agent.rating || 4.5, // Default rating if not provided
+          agent_code: agent.agent_code,
+        }));
+        
+        setAgents(formattedAgents);
+      } catch (err) {
+        console.error("Error fetching agents:", err);
+        setError("Failed to load available agents. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchAgents();
+    
+    // Set up real-time listener for agent status changes
+    const agentSubscription = supabase
+      .channel('public:agents')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'agents',
+          filter: 'online_status=eq.true'
+        }, 
+        (payload) => {
+          console.log('Change received!', payload);
+          // Refresh the agents list when changes occur
+          fetchAgents();
+        }
+      )
+      .subscribe();
+      
+    // Cleanup function
+    return () => {
+      supabase.removeChannel(agentSubscription);
+    };
   }, []);
 
   const handleServiceTypeChange = (value: string) => {
@@ -131,27 +165,37 @@ const PlaceOrder = () => {
     setCurrentStep((prev) => prev - 1);
   };
 
-  const handleSubmitOrder = () => {
-    // Logic to submit order to Supabase
-    toast({
-      title: "Order placed successfully",
-      description: "An agent will be assigned to your order shortly",
-    });
-    
-    // Navigate to order confirmation
-    navigate("/order-confirmation", { 
-      state: { 
-        orderId: "ORDER" + Math.floor(Math.random() * 10000),
-        orderData,
-        deliveryCharge: calculateDeliveryCharge(orderData.deliveryAddress),
-        serviceCharge: calculateServiceCharge(orderData.baseCharge),
-        totalAmount: calculateTotalAmount(
-          orderData.baseCharge,
-          calculateServiceCharge(orderData.baseCharge),
-          calculateDeliveryCharge(orderData.deliveryAddress)
-        )
-      } 
-    });
+  const handleSubmitOrder = async () => {
+    try {
+      // Logic to submit order to Supabase will be added here
+      
+      toast({
+        title: "Order placed successfully",
+        description: "An agent will be assigned to your order shortly",
+      });
+      
+      // Navigate to order confirmation
+      navigate("/order-confirmation", { 
+        state: { 
+          orderId: "ORDER" + Math.floor(Math.random() * 10000),
+          orderData,
+          deliveryCharge: calculateDeliveryCharge(orderData.deliveryAddress),
+          serviceCharge: calculateServiceCharge(orderData.baseCharge),
+          totalAmount: calculateTotalAmount(
+            orderData.baseCharge,
+            calculateServiceCharge(orderData.baseCharge),
+            calculateDeliveryCharge(orderData.deliveryAddress)
+          )
+        } 
+      });
+    } catch (err) {
+      console.error("Error submitting order:", err);
+      toast({
+        title: "Order submission failed",
+        description: "There was an error placing your order. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Calculate charges
@@ -280,54 +324,77 @@ const PlaceOrder = () => {
               {!autoAssign && (
                 <div className="space-y-2">
                   <Label>Available Agents</Label>
-                  <div className="grid grid-cols-1 gap-3">
-                    {agents
-                      .filter(agent => agent.online_status)
-                      .map(agent => (
-                        <div
-                          key={agent.id}
-                          className={`border rounded-lg p-3 flex items-center cursor-pointer transition-colors ${
-                            orderData.agentId === agent.id 
-                              ? "border-doorrush-primary bg-doorrush-light"
-                              : "hover:border-doorrush-primary"
-                          }`}
-                          onClick={() => handleAgentSelection(agent.id)}
-                        >
-                          <div className="h-10 w-10 bg-muted rounded-full overflow-hidden flex-shrink-0">
-                            {agent.profile_picture ? (
-                              <img
-                                src={agent.profile_picture}
-                                alt={agent.full_name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center bg-doorrush-primary text-white">
-                                {agent.full_name.charAt(0)}
+                  
+                  {loading && (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-doorrush-primary border-t-transparent"></div>
+                      <p className="ml-2 text-sm text-muted-foreground">Loading agents...</p>
+                    </div>
+                  )}
+                  
+                  {error && (
+                    <div className="border border-red-200 bg-red-50 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <AlertCircle size={18} className="text-red-500 mt-0.5 mr-2" />
+                        <p className="text-sm text-red-700">{error}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!loading && !error && (
+                    <div className="grid grid-cols-1 gap-3">
+                      {agents.length > 0 ? (
+                        agents.map(agent => (
+                          <div
+                            key={agent.id}
+                            className={`border rounded-lg p-3 flex items-center cursor-pointer transition-colors ${
+                              orderData.agentId === agent.id 
+                                ? "border-doorrush-primary bg-doorrush-light"
+                                : "hover:border-doorrush-primary"
+                            }`}
+                            onClick={() => handleAgentSelection(agent.id)}
+                          >
+                            <div className="h-10 w-10 bg-muted rounded-full overflow-hidden flex-shrink-0">
+                              {agent.profile_picture ? (
+                                <img
+                                  src={agent.profile_picture}
+                                  alt={agent.full_name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="h-full w-full flex items-center justify-center bg-doorrush-primary text-white">
+                                  {agent.full_name.charAt(0)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="ml-3 flex-1">
+                              <p className="font-medium">{agent.full_name}</p>
+                              <div className="flex items-center text-sm text-muted-foreground">
+                                <span className="flex items-center">
+                                  <span className="h-2 w-2 rounded-full bg-green-500 mr-1"></span>
+                                  Online
+                                </span>
+                                <span className="mx-2">•</span>
+                                <span>{agent.current_location}</span>
+                                <span className="mx-2">•</span>
+                                <span>★ {agent.rating}</span>
                               </div>
-                            )}
-                          </div>
-                          <div className="ml-3 flex-1">
-                            <p className="font-medium">{agent.full_name}</p>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <span className="flex items-center">
-                                <span className="h-2 w-2 rounded-full bg-green-500 mr-1"></span>
-                                Online
-                              </span>
-                              <span className="mx-2">•</span>
-                              <span>{agent.current_location}</span>
-                              <span className="mx-2">•</span>
-                              <span>★ {agent.rating}</span>
                             </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="border rounded-lg p-8 text-center">
+                          <div className="flex flex-col items-center">
+                            <Info size={24} className="mb-2 text-muted-foreground" />
+                            <p className="font-medium">No agents currently online</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Please check back later or use auto-assign mode
+                            </p>
+                          </div>
                         </div>
-                      ))}
-                    
-                    {agents.filter(agent => agent.online_status).length === 0 && (
-                      <div className="text-center py-4">
-                        <p className="text-muted-foreground">No agents available at the moment</p>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               
