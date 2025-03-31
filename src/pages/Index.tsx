@@ -60,7 +60,7 @@ const Index = () => {
               </div>
               <div className="hidden md:block">
                 <img 
-                  src="https://placehold.co/600x400/E5DEFF/6E59A5?text=DoorRush+Delivery"
+                  src="https://placehold.co/600x400/E3F2FD/1E88E5?text=DoorRush+Delivery"
                   alt="DoorRush Delivery"
                   className="rounded-lg shadow-lg"
                 />

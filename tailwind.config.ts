@@ -54,10 +54,10 @@ export default {
 					foreground: 'hsl(var(--card-foreground))'
 				},
 				doorrush: {
-					primary: '#6E59A5',
-					secondary: '#F97316',
-					light: '#E5DEFF',
-					dark: '#3A2F59',
+					primary: '#1E88E5', // Changed from purple to blue
+					secondary: '#F97316', // Kept orange as secondary
+					light: '#E3F2FD', // Changed to light blue
+					dark: '#0D47A1', // Changed to dark blue
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
