@@ -68,7 +68,7 @@ const PlaceOrder = () => {
         
         const { data, error } = await supabase
           .from('agents')
-          .select('id, full_name, phone_number, profile_picture, location, agent_code, online_status, rating')
+          .select('id, full_name, phone_number, profile_picture, location, agent_code, online_status')
           .eq('online_status', true);
           
         if (error) {
@@ -83,7 +83,7 @@ const PlaceOrder = () => {
           profile_picture: agent.profile_picture || "",
           online_status: agent.online_status,
           current_location: agent.location || "Unknown",
-          rating: agent.rating || 4.5, // Default rating if not provided
+          rating: 4.5, // Default rating since it's not in the database
           agent_code: agent.agent_code,
         }));
         
