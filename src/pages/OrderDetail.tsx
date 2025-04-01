@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/MainLayout";
@@ -45,6 +44,25 @@ const OrderDetail = () => {
   const [tipAmount, setTipAmount] = useState("");
   const [showQRCode, setShowQRCode] = useState(false);
   
+  const mapDBOrderToOrder = (dbOrder: any): Order => {
+    return {
+      id: dbOrder.id,
+      customer_id: dbOrder.customer_id,
+      agent_id: dbOrder.agent_id,
+      service_type: 'Delivery', // Default since this field doesn't exist in DB
+      delivery_address: dbOrder.delivery_address,
+      status: dbOrder.status as Order['status'], // Type cast to ensure it matches the enum
+      base_charge: dbOrder.amount || 0,
+      service_charge: (dbOrder.amount || 0) * 0.1,
+      delivery_charge: dbOrder.delivery_fee || 0,
+      total_amount: (dbOrder.amount || 0) + (dbOrder.delivery_fee || 0) + ((dbOrder.amount || 0) * 0.1),
+      created_at: dbOrder.created_at,
+      updated_at: dbOrder.updated_at,
+      customer_name: dbOrder.customer_name,
+      customer_contact: dbOrder.customer_contact,
+    };
+  };
+
   useEffect(() => {
     const fetchOrderData = async () => {
       if (!id) {
@@ -55,7 +73,6 @@ const OrderDetail = () => {
       try {
         setLoading(true);
         
-        // Fetch the order data
         const { data: orderData, error: orderError } = await supabase
           .from('orders')
           .select('*')
@@ -70,28 +87,10 @@ const OrderDetail = () => {
           return;
         }
         
-        // Map the order data to our Order type
-        const mappedOrder: Order = {
-          id: orderData.id,
-          customer_id: orderData.customer_id,
-          agent_id: orderData.agent_id,
-          service_type: "Delivery", // Default since this field isn't in the DB
-          delivery_address: orderData.delivery_address,
-          status: orderData.status as Order['status'],
-          base_charge: orderData.amount || 0,
-          service_charge: (orderData.amount || 0) * 0.1,
-          delivery_charge: orderData.delivery_fee || 0,
-          total_amount: (orderData.amount || 0) + (orderData.delivery_fee || 0) + ((orderData.amount || 0) * 0.1),
-          created_at: orderData.created_at,
-          updated_at: orderData.updated_at,
-          instructions: orderData.description,
-          customer_name: orderData.customer_name,
-          customer_contact: orderData.customer_contact,
-        };
+        const mappedOrder = mapDBOrderToOrder(orderData);
         
         setOrder(mappedOrder);
         
-        // If there's an agent assigned, fetch their details
         if (orderData.agent_id) {
           const { data: agentData, error: agentError } = await supabase
             .from('agents')
@@ -123,7 +122,6 @@ const OrderDetail = () => {
 
     fetchOrderData();
     
-    // Set up real-time listener for order updates
     const channel = supabase
       .channel('order-updates')
       .on('postgres_changes', 
@@ -140,7 +138,6 @@ const OrderDetail = () => {
       )
       .subscribe();
     
-    // Cleanup function
     return () => {
       supabase.removeChannel(channel);
     };
@@ -193,7 +190,6 @@ const OrderDetail = () => {
     }
     
     try {
-      // Insert tip record into database
       const { error } = await supabase
         .from('tips')
         .insert({
@@ -220,7 +216,6 @@ const OrderDetail = () => {
     }
   };
   
-  // Create a string representation of the order for QR code
   const orderQRData = order ? JSON.stringify({
     orderId: order.id,
     serviceType: order.service_type,

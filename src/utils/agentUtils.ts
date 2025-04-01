@@ -28,7 +28,7 @@ export const fetchAgents = async (): Promise<Agent[]> => {
       full_name: agent.full_name,
       phone_number: agent.phone_number,
       online_status: agent.online_status || false,
-      current_location: agent.location || "Unknown location",
+      location: agent.location || "Unknown location",
       rating: 4.8, // Default rating for now
       profile_picture: agent.profile_picture || "",
       agent_code: agent.agent_code,
@@ -66,7 +66,7 @@ export const fetchOnlineAgents = async (): Promise<Agent[]> => {
       full_name: agent.full_name,
       phone_number: agent.phone_number,
       online_status: true,
-      current_location: agent.location || "Unknown location",
+      location: agent.location || "Unknown location",
       rating: 4.8, // Default rating for now
       profile_picture: agent.profile_picture || "",
       agent_code: agent.agent_code,

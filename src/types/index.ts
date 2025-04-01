@@ -1,3 +1,4 @@
+
 // Customer type
 export type Customer = {
   id: string;
@@ -14,9 +15,10 @@ export type Agent = {
   full_name: string;
   phone_number: string;
   online_status: boolean;
-  current_location?: string;
-  rating?: number;
+  location?: string;
   profile_picture?: string;
+  agent_code?: string;
+  rating?: number;
 };
 
 // Order type

@@ -16,6 +16,14 @@ const Dashboard = () => {
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // Get random greeting emoji
+  const getRandomEmoji = () => {
+    const emojis = ['👋', '🙌', '✨', '😊', '🎉', '🌟'];
+    return emojis[Math.floor(Math.random() * emojis.length)];
+  };
+  
+  const [greetingEmoji] = useState(getRandomEmoji());
+  
   useEffect(() => {
     // Fetch orders from Supabase
     const fetchOrders = async () => {
@@ -175,7 +183,9 @@ const Dashboard = () => {
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Hello, {customer?.full_name?.split(' ')[0] || 'Customer'}</h1>
+            <h1 className="text-2xl font-bold">
+              Hello, {customer?.full_name?.split(' ')[0] || 'Customer'} {greetingEmoji}
+            </h1>
             <p className="text-muted-foreground">Welcome to DoorRush</p>
           </div>
           <Button 
