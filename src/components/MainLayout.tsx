@@ -85,8 +85,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             <h1 className="text-2xl font-bold mb-6">{title}</h1>
           )}
           
-          {/* The navigation bar div has been removed from here */}
-          
           {children}
         </div>
       </main>
@@ -164,18 +162,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             </Button>
           </div>
         </SheetContent>
+        
+        {/* Move the SheetTrigger inside the Sheet component */}
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Menu"
+            className="fixed bottom-6 right-6 rounded-full shadow-lg bg-white dark:bg-gray-800 z-50"
+          >
+            <Menu size={24} />
+          </Button>
+        </SheetTrigger>
       </Sheet>
-      
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Menu"
-          className="fixed bottom-6 right-6 rounded-full shadow-lg bg-white dark:bg-gray-800 z-50"
-        >
-          <Menu size={24} />
-        </Button>
-      </SheetTrigger>
     </div>
   );
 };
