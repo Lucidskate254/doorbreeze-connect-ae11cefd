@@ -35,7 +35,7 @@ const Dashboard = () => {
         const { data: recentData, error: recentError } = await supabase
           .from('orders')
           .select('*')
-          .in('status', '["Delivered","Cancelled"]')
+          .in('status', ['Delivered','Cancelled']) // Fixed: Using array instead of string
           .order('created_at', { ascending: false })
           .limit(5);
         

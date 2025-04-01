@@ -12,65 +12,92 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, CheckCircle2, Clock, Search } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, Search, ArrowLeft } from "lucide-react";
 import { Order } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const OrderHistory = () => {
   const navigate = useNavigate();
+  const { customer } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Mock data - will be replaced with Supabase query
-    const mockOrders: Order[] = [
-      {
-        id: "1",
-        customer_id: "123",
-        agent_id: "456",
-        service_type: "Delivery",
-        delivery_address: "Eldoret CBD",
-        status: "In Transit",
-        base_charge: 200,
-        service_charge: 20,
-        delivery_charge: 60,
-        total_amount: 280,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        id: "2",
-        customer_id: "123",
-        agent_id: "789",
-        service_type: "Shopping",
-        delivery_address: "Langas",
-        status: "Delivered",
-        base_charge: 500,
-        service_charge: 50,
-        delivery_charge: 100,
-        total_amount: 650,
-        created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-        updated_at: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        id: "3",
-        customer_id: "123",
-        agent_id: "456",
-        service_type: "Errand",
-        delivery_address: "Kapsoya",
-        status: "Delivered",
-        base_charge: 300,
-        service_charge: 30,
-        delivery_charge: 100,
-        total_amount: 430,
-        created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-        updated_at: new Date(Date.now() - 172800000).toISOString(),
-      },
-    ];
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (!data || data.length === 0) {
+          setOrders([]);
+          setFilteredOrders([]);
+          return;
+        }
+        
+        // Map database records to Order type
+        const mappedOrders: Order[] = data.map(order => ({
+          id: order.id,
+          customer_id: order.customer_id,
+          agent_id: order.agent_id,
+          service_type: "Delivery", // Default since this field doesn't exist in DB
+          delivery_address: order.delivery_address,
+          status: order.status,
+          base_charge: order.amount || 0,
+          service_charge: (order.amount || 0) * 0.1,
+          delivery_charge: order.delivery_fee || 0,
+          total_amount: (order.amount || 0) + (order.delivery_fee || 0) + ((order.amount || 0) * 0.1),
+          created_at: order.created_at,
+          updated_at: order.updated_at,
+        }));
+        
+        setOrders(mappedOrders);
+        setFilteredOrders(mappedOrders);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        setOrders([]);
+        setFilteredOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    setOrders(mockOrders);
-    setFilteredOrders(mockOrders);
+    fetchOrders();
+    
+    // Set up real-time listener for order updates
+    const channel = supabase
+      .channel('orders-history')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'orders',
+        }, 
+        () => {
+          console.log('Order data changed, refreshing history...');
+          fetchOrders();
+          
+          // Vibration feedback for order update
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          }
+        }
+      )
+      .subscribe();
+    
+    // Cleanup function
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
   
   useEffect(() => {
@@ -127,9 +154,19 @@ const OrderHistory = () => {
     <MainLayout>
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Order History</h1>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate('/dashboard')}
+              className="mr-2 md:hidden"
+            >
+              <ArrowLeft size={20} />
+            </Button>
+            <h1 className="text-2xl font-bold">Order History</h1>
+          </div>
           <Button 
-            className="bg-doorrush-primary hover:bg-doorrush-dark"
+            className="bg-blue-600 hover:bg-blue-700"
             onClick={() => navigate('/place-order')}
           >
             Place New Order
@@ -162,14 +199,20 @@ const OrderHistory = () => {
           </Select>
         </div>
         
-        <Card>
+        <Card className="border-blue-100 shadow-md overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-1"></div>
           <CardContent className="p-6">
-            {filteredOrders.length > 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+                <p className="ml-2 text-sm text-muted-foreground">Loading orders...</p>
+              </div>
+            ) : filteredOrders.length > 0 ? (
               <div className="space-y-4">
                 {filteredOrders.map((order) => (
                   <div 
                     key={order.id} 
-                    className="border rounded-lg p-4 hover:border-doorrush-primary cursor-pointer transition-colors"
+                    className="border border-blue-100 rounded-lg p-4 hover:border-blue-400 hover:shadow-md hover:shadow-blue-50 cursor-pointer transition-all"
                     onClick={() => navigate(`/order/${order.id}`)}
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -184,7 +227,7 @@ const OrderHistory = () => {
                     </div>
                     <div className="flex justify-between items-end">
                       <div className="text-sm">
-                        <span className="text-muted-foreground">Order #{order.id}</span>
+                        <span className="text-muted-foreground">Order #{order.id.substring(0, 8)}</span>
                         <div className="text-xs text-muted-foreground">
                           {formatDate(order.created_at)}
                         </div>
@@ -200,7 +243,7 @@ const OrderHistory = () => {
                 {orders.length > 0 && filteredOrders.length === 0 ? (
                   <Button 
                     variant="link" 
-                    className="text-doorrush-primary"
+                    className="text-blue-600"
                     onClick={() => {
                       setSearchQuery("");
                       setStatusFilter("all");
@@ -210,7 +253,7 @@ const OrderHistory = () => {
                   </Button>
                 ) : (
                   <Button
-                    className="bg-doorrush-primary hover:bg-doorrush-dark"
+                    className="bg-blue-600 hover:bg-blue-700"
                     onClick={() => navigate('/place-order')}
                   >
                     Place your first order
