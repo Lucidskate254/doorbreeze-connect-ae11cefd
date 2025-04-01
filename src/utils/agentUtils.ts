@@ -79,6 +79,24 @@ export const fetchOnlineAgents = async (): Promise<Agent[]> => {
 };
 
 /**
+ * Gets a random online agent for auto-assignment
+ * @returns Promise with a random agent or null if none available
+ */
+export const getRandomOnlineAgent = async (): Promise<Agent | null> => {
+  try {
+    const onlineAgents = await fetchOnlineAgents();
+    if (onlineAgents.length === 0) return null;
+    
+    // Get random index
+    const randomIndex = Math.floor(Math.random() * onlineAgents.length);
+    return onlineAgents[randomIndex];
+  } catch (error) {
+    console.error("Error getting random agent:", error);
+    return null;
+  }
+};
+
+/**
  * Sets up a real-time subscription to agent status changes
  * @param callback Function to call when agent data changes
  * @returns Cleanup function to remove the subscription

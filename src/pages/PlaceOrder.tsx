@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -41,11 +42,14 @@ import {
   Agent
 } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchOnlineAgents, subscribeToAgentStatusChanges } from "@/utils/agentUtils";
+import { fetchOnlineAgents, fetchAgents, getRandomOnlineAgent, subscribeToAgentStatusChanges } from "@/utils/agentUtils";
+import { useAuth } from "@/contexts/AuthContext";
+import { vibrate } from "@/utils/vibrationUtils";
 
 const PlaceOrder = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { customer } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [orderData, setOrderData] = useState({
     serviceType: "",
@@ -65,8 +69,9 @@ const PlaceOrder = () => {
         setLoading(true);
         setError(null);
         
-        const onlineAgents = await fetchOnlineAgents();
-        setAgents(onlineAgents);
+        // Fetch all agents to display both online and offline
+        const allAgents = await fetchAgents();
+        setAgents(allAgents);
       } catch (err) {
         console.error("Error fetching agents:", err);
         setError("Failed to load available agents. Please try again.");
@@ -99,6 +104,7 @@ const PlaceOrder = () => {
   const handleAgentSelection = (agentId: string) => {
     setOrderData((prev) => ({ ...prev, agentId }));
     setAutoAssign(false);
+    vibrate(50); // Subtle feedback when selecting agent
   };
 
   const handleAutoAssignToggle = () => {
@@ -106,11 +112,13 @@ const PlaceOrder = () => {
       setOrderData((prev) => ({ ...prev, agentId: "" }));
     }
     setAutoAssign(!autoAssign);
+    vibrate(50); // Subtle feedback
   };
 
   const handleNextStep = () => {
     if (currentStep === 1) {
       if (!orderData.serviceType || !orderData.deliveryAddress) {
+        vibrate(200); // Error vibration
         toast({
           title: "Missing information",
           description: "Please complete all required fields",
@@ -120,20 +128,30 @@ const PlaceOrder = () => {
       }
     }
     
+    vibrate([30, 20, 30]); // Success pattern
     setCurrentStep((prev) => prev + 1);
   };
 
   const handlePreviousStep = () => {
+    vibrate(50); // Subtle feedback
     setCurrentStep((prev) => prev - 1);
   };
 
   const handleSubmitOrder = async () => {
     try {
+      let selectedAgentId = orderData.agentId;
+      
+      // If auto-assign is enabled, select a random online agent
+      if (autoAssign) {
+        const randomAgent = await getRandomOnlineAgent();
+        selectedAgentId = randomAgent?.id || null;
+      }
+      
       const orderToSubmit = {
-        customer_id: "customer-id",
-        customer_name: "Customer Name",
-        customer_contact: "0712345678",
-        agent_id: autoAssign ? null : orderData.agentId,
+        customer_id: customer?.id || "unknown-customer",
+        customer_name: customer?.full_name || "Unknown Customer",
+        customer_contact: customer?.phone_number || "Unknown Contact",
+        agent_id: selectedAgentId,
         delivery_address: orderData.deliveryAddress,
         amount: orderData.baseCharge,
         delivery_fee: calculateDeliveryCharge(orderData.deliveryAddress),
@@ -150,6 +168,8 @@ const PlaceOrder = () => {
       if (error) {
         throw error;
       }
+      
+      vibrate([100, 50, 100]); // Success vibration pattern
       
       toast({
         title: "Order placed successfully",
@@ -174,6 +194,9 @@ const PlaceOrder = () => {
       });
     } catch (err) {
       console.error("Error submitting order:", err);
+      
+      vibrate(300); // Error vibration
+      
       toast({
         title: "Order submission failed",
         description: "There was an error placing your order. Please try again.",
@@ -353,8 +376,8 @@ const PlaceOrder = () => {
                               <p className="font-medium">{agent.full_name}</p>
                               <div className="flex items-center text-sm text-muted-foreground">
                                 <span className="flex items-center">
-                                  <span className="h-2 w-2 rounded-full bg-green-500 mr-1"></span>
-                                  Online
+                                  <span className={`h-2 w-2 rounded-full ${agent.online_status ? 'bg-green-500' : 'bg-gray-400'} mr-1`}></span>
+                                  {agent.online_status ? 'Online' : 'Offline'}
                                 </span>
                                 <span className="mx-2">•</span>
                                 <span>{agent.location}</span>
@@ -368,9 +391,9 @@ const PlaceOrder = () => {
                         <div className="border rounded-lg p-8 text-center">
                           <div className="flex flex-col items-center">
                             <Info size={24} className="mb-2 text-muted-foreground" />
-                            <p className="font-medium">No agents currently online</p>
+                            <p className="font-medium">No agents found</p>
                             <p className="text-sm text-muted-foreground mt-1">
-                              Please check back later or use auto-assign mode
+                              Please try again or use auto-assign mode
                             </p>
                           </div>
                         </div>
@@ -387,7 +410,7 @@ const PlaceOrder = () => {
                     <div>
                       <p className="font-medium">Automatic Assignment</p>
                       <p className="text-sm text-muted-foreground">
-                        We'll assign the nearest available agent to your order. You'll be notified once an agent accepts your order.
+                        We'll assign an available agent to your order. You'll be notified once an agent accepts your order.
                       </p>
                     </div>
                   </div>

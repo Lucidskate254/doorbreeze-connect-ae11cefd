@@ -2,6 +2,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { vibrate } from "@/utils/vibrationUtils";
 
 type Customer = {
   id: string;
@@ -37,30 +39,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Mock authentication for now - will connect to Supabase later
+  // Check for existing session on load
   useEffect(() => {
-    const storedUser = localStorage.getItem("doorrush_customer");
-    if (storedUser) {
-      setCustomer(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    const checkSession = async () => {
+      const storedUser = localStorage.getItem("doorrush_customer");
+      if (storedUser) {
+        setCustomer(JSON.parse(storedUser));
+      }
+      setIsLoading(false);
+    };
+    
+    checkSession();
   }, []);
 
   const login = async (phone: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate authentication - replace with Supabase auth
-      const mockCustomer = {
-        id: "123",
-        full_name: "Test User",
-        phone_number: phone,
-        address: "Eldoret CBD",
-        profile_picture: "",
-        created_at: new Date().toISOString(),
-      };
+      // Check if the phone number exists in the customers table
+      const { data: customerData, error: customerError } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('phone_number', phone)
+        .single();
 
-      localStorage.setItem("doorrush_customer", JSON.stringify(mockCustomer));
-      setCustomer(mockCustomer);
+      if (customerError || !customerData) {
+        throw new Error("User not found or invalid credentials");
+      }
+      
+      // Very simple password check (in a real app, this would use proper hashing)
+      if (customerData.password_hash !== password) {
+        throw new Error("Invalid password");
+      }
+
+      // Set the customer in state and local storage
+      localStorage.setItem("doorrush_customer", JSON.stringify(customerData));
+      setCustomer(customerData);
+      
+      vibrate([100, 50, 100]); // Success vibration pattern
       
       toast({
         title: "Login successful",
@@ -70,6 +85,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       navigate("/dashboard");
     } catch (error) {
       console.error("Login error:", error);
+      
+      vibrate(500); // Error vibration
+      
       toast({
         title: "Login failed",
         description: "Invalid phone number or password",
@@ -83,18 +101,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (userData: RegisterData) => {
     setIsLoading(true);
     try {
-      // Simulate registration - replace with Supabase auth
-      const mockCustomer = {
-        id: "123",
-        full_name: userData.full_name,
-        phone_number: userData.phone_number,
-        address: userData.address,
-        profile_picture: "",
-        created_at: new Date().toISOString(),
-      };
+      // Check if phone number already exists
+      const { data: existingUser } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('phone_number', userData.phone_number)
+        .single();
 
-      localStorage.setItem("doorrush_customer", JSON.stringify(mockCustomer));
-      setCustomer(mockCustomer);
+      if (existingUser) {
+        throw new Error("Phone number already registered");
+      }
+
+      // Generate a random UUID for the customer
+      const customerId = crypto.randomUUID();
+      
+      // Insert new customer into the database
+      const { data, error } = await supabase
+        .from('customers')
+        .insert({
+          id: customerId,
+          full_name: userData.full_name,
+          phone_number: userData.phone_number,
+          address: userData.address,
+          password_hash: userData.password, // In a real app, this would be properly hashed
+          profile_picture: "" // We'll handle profile picture upload separately
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Registration database error:", error);
+        throw new Error("Error registering account");
+      }
+
+      // Handle profile picture upload if provided
+      if (userData.profile_picture) {
+        const fileExt = userData.profile_picture.name.split('.').pop();
+        const fileName = `${customerId}.${fileExt}`;
+        
+        // In a real implementation, you'd upload to Supabase storage
+        // For now, we'll just log this
+        console.log("Would upload profile picture:", fileName);
+      }
+
+      // Set the customer in state and local storage
+      localStorage.setItem("doorrush_customer", JSON.stringify(data));
+      setCustomer(data);
+      
+      vibrate([100, 50, 100]); // Success vibration pattern
       
       toast({
         title: "Registration successful",
@@ -104,9 +158,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       navigate("/dashboard");
     } catch (error) {
       console.error("Registration error:", error);
+      
+      vibrate(500); // Error vibration
+      
       toast({
         title: "Registration failed",
-        description: "There was a problem registering your account",
+        description: error instanceof Error ? error.message : "There was a problem registering your account",
         variant: "destructive",
       });
     } finally {
@@ -118,6 +175,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("doorrush_customer");
     setCustomer(null);
     navigate("/login");
+    
+    vibrate([50, 30, 50]); // Logout vibration pattern
+    
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",

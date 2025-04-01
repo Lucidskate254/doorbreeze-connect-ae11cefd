@@ -1,255 +1,215 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import MainLayout from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import MainLayout from "@/components/MainLayout";
-import { ShoppingBag, Clock, AlertCircle, CheckCircle2 } from "lucide-react";
-import { Order } from "@/types";
-import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Package, LocateFixed, ArrowRight, Clock, Phone } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchOnlineAgents } from "@/utils/agentUtils";
+import { Agent } from "@/types";
+import { vibrate } from "@/utils/vibrationUtils";
 
 const Dashboard = () => {
   const { customer } = useAuth();
-  const navigate = useNavigate();
-  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
-  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Get random greeting emoji
-  const getRandomEmoji = () => {
-    const emojis = ['👋', '🙌', '✨', '😊', '🎉', '🌟'];
-    return emojis[Math.floor(Math.random() * emojis.length)];
-  };
-  
-  const [greetingEmoji] = useState(getRandomEmoji());
-  
+  const [activeAgentsCount, setActiveAgentsCount] = useState<number>(0);
+  const [recentlyActive, setRecentlyActive] = useState<Agent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    // Fetch orders from Supabase
-    const fetchOrders = async () => {
+    const loadAgentData = async () => {
       try {
-        setLoading(true);
+        setIsLoading(true);
+        const onlineAgents = await fetchOnlineAgents();
+        setActiveAgentsCount(onlineAgents.length);
         
-        // Get active orders (status not 'Delivered' or 'Cancelled')
-        const { data: activeData, error: activeError } = await supabase
-          .from('orders')
-          .select('*')
-          .not('status', 'in', '("Delivered","Cancelled")')
-          .order('created_at', { ascending: false });
-        
-        if (activeError) throw activeError;
-        
-        // Get recent completed orders
-        const { data: recentData, error: recentError } = await supabase
-          .from('orders')
-          .select('*')
-          .in('status', ['Delivered','Cancelled']) // Fixed: Using array instead of string
-          .order('created_at', { ascending: false })
-          .limit(5);
-        
-        if (recentError) throw recentError;
-        
-        // Map database records to Order type
-        const mapOrderData = (data: any[]): Order[] => {
-          return data.map(order => ({
-            id: order.id,
-            customer_id: order.customer_id,
-            agent_id: order.agent_id,
-            service_type: "Delivery", // Default since this field doesn't exist in DB
-            delivery_address: order.delivery_address,
-            status: order.status,
-            base_charge: order.amount || 0,
-            service_charge: (order.amount || 0) * 0.1,
-            delivery_charge: order.delivery_fee || 0,
-            total_amount: (order.amount || 0) + (order.delivery_fee || 0) + ((order.amount || 0) * 0.1),
-            created_at: order.created_at,
-            updated_at: order.updated_at,
-          }));
-        };
-        
-        setActiveOrders(mapOrderData(activeData || []));
-        setRecentOrders(mapOrderData(recentData || []));
+        // Get 3 most recently online agents
+        setRecentlyActive(onlineAgents.slice(0, 3));
       } catch (error) {
-        console.error("Error fetching orders:", error);
-        // Set empty arrays on error
-        setActiveOrders([]);
-        setRecentOrders([]);
+        console.error("Error loading agent data:", error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
+
+    loadAgentData();
     
-    fetchOrders();
+    // Set up polling to refresh agent data every 30 seconds
+    const intervalId = setInterval(loadAgentData, 30000);
     
-    // Set up real-time listener for order updates
-    const channel = supabase
-      .channel('public:orders')
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'orders',
-        }, 
-        () => {
-          console.log('Order data changed, refreshing...');
-          fetchOrders();
-        }
-      )
-      .subscribe();
-    
-    // Cleanup function
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => clearInterval(intervalId);
   }, []);
 
-  const getStatusColor = (status: Order['status']) => {
-    switch (status) {
-      case "Pending": return "bg-amber-100 text-amber-800";
-      case "Assigned": return "bg-blue-100 text-blue-800";
-      case "In Transit": return "bg-purple-100 text-purple-800";
-      case "Delivered": return "bg-green-100 text-green-800";
-      case "Cancelled": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
+  const handlePlaceOrderClick = () => {
+    vibrate([50, 30, 50]); // Subtle feedback on click
   };
 
-  const getStatusIcon = (status: Order['status']) => {
-    switch (status) {
-      case "Pending": return <AlertCircle size={16} />;
-      case "Assigned": return <Clock size={16} />;
-      case "In Transit": return <Clock size={16} />;
-      case "Delivered": return <CheckCircle2 size={16} />;
-      case "Cancelled": return <AlertCircle size={16} />;
-      default: return <AlertCircle size={16} />;
-    }
-  };
-
-  const renderOrderList = (orders: Order[], emptyMessage: string) => {
-    if (loading) {
-      return (
-        <div className="flex items-center justify-center py-8">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-doorrush-primary border-t-transparent"></div>
-          <p className="ml-2 text-sm text-muted-foreground">Loading orders...</p>
-        </div>
-      );
-    }
-    
-    if (orders.length === 0) {
-      return (
-        <div className="text-center py-6">
-          <p className="text-muted-foreground">{emptyMessage}</p>
-          <Button
-            variant="link"
-            className="mt-2 text-doorrush-primary"
-            onClick={() => navigate('/place-order')}
-          >
-            Place your first order
-          </Button>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="space-y-4">
-        {orders.map((order) => (
-          <div 
-            key={order.id} 
-            className="border rounded-lg p-4 hover:border-doorrush-primary cursor-pointer transition-colors"
-            onClick={() => navigate(`/order/${order.id}`)}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h3 className="font-medium">{order.service_type}</h3>
-                <p className="text-sm text-muted-foreground">{order.delivery_address}</p>
-              </div>
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${getStatusColor(order.status)}`}>
-                {getStatusIcon(order.status)}
-                <span>{order.status}</span>
-              </div>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Order #{order.id.substring(0, 8)}</span>
-              <span className="font-medium">KES {order.total_amount.toFixed(2)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+  const getRandomGreetingEmoji = () => {
+    const greetingEmojis = ["👋", "🙌", "✨", "😊", "🌟", "👍", "🤝"];
+    return greetingEmojis[Math.floor(Math.random() * greetingEmojis.length)];
   };
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">
-              Hello, {customer?.full_name?.split(' ')[0] || 'Customer'} {greetingEmoji}
-            </h1>
-            <p className="text-muted-foreground">Welcome to DoorRush</p>
-          </div>
-          <Button 
-            className="bg-doorrush-primary hover:bg-doorrush-dark"
-            onClick={() => navigate('/place-order')}
-          >
-            <ShoppingBag size={18} className="mr-2" />
-            Place Order
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Active Orders</h2>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => navigate('/order-history')}
-                >
-                  View all
-                </Button>
+      <div className="animate-fade-in">
+        <h1 className="text-2xl font-bold mb-6">
+          Hello, {customer?.full_name || "Customer"} {getRandomGreetingEmoji()}
+        </h1>
+        
+        <Card className="mb-6 bg-gradient-to-r from-doorrush-primary/90 to-blue-400 text-white shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row items-center justify-between">
+              <div className="mb-4 md:mb-0">
+                <h2 className="text-lg font-semibold">Place a new order</h2>
+                <p className="text-blue-50 mt-1">Get deliveries anywhere in Eldoret</p>
               </div>
-              
-              {renderOrderList(activeOrders, "No active orders")}
+              <Link to="/place-order" onClick={handlePlaceOrderClick}>
+                <Button variant="secondary" className="animate-pulse-scale bg-white text-doorrush-primary hover:bg-blue-50">
+                  Order Now
+                  <ArrowRight size={16} className="ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <Card className="bg-gradient-to-br from-white to-blue-50 shadow-md border-blue-100">
+            <CardContent className="p-6">
+              <div className="flex items-center text-doorrush-primary mb-3">
+                <LocateFixed size={20} className="mr-2" />
+                <h3 className="font-semibold">Active Agents</h3>
+              </div>
+              {isLoading ? (
+                <div className="flex items-center text-muted-foreground">
+                  <div className="h-4 w-4 mr-2 rounded-full border-2 border-doorrush-primary border-t-transparent animate-spin"></div>
+                  Loading agents...
+                </div>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold mb-2">{activeAgentsCount}</p>
+                  <p className="text-muted-foreground text-sm">Agents currently online and ready to deliver</p>
+                </>
+              )}
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-gradient-to-br from-white to-blue-50 shadow-md border-blue-100">
             <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Recent Orders</h2>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => navigate('/order-history')}
-                >
-                  View all
-                </Button>
+              <div className="flex items-center text-doorrush-primary mb-3">
+                <Clock size={20} className="mr-2" />
+                <h3 className="font-semibold">Average Delivery Time</h3>
               </div>
-              
-              {renderOrderList(recentOrders, "No order history")}
+              <p className="text-3xl font-bold mb-2">30 mins</p>
+              <p className="text-muted-foreground text-sm">Average time for deliveries within Eldoret</p>
             </CardContent>
           </Card>
         </div>
         
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center py-4">
-              <h2 className="text-lg font-semibold mb-2">Need something delivered?</h2>
-              <p className="text-muted-foreground mb-4">
-                We're here to help with shopping, deliveries, and errands in Eldoret.
-              </p>
-              <Button 
-                className="bg-doorrush-primary hover:bg-doorrush-dark"
-                onClick={() => navigate('/place-order')}
-              >
-                <ShoppingBag size={18} className="mr-2" />
-                Place New Order
-              </Button>
+        <Tabs defaultValue="featured" className="mb-6">
+          <TabsList className="w-full border-b">
+            <TabsTrigger value="featured" className="flex-1">Featured Services</TabsTrigger>
+            <TabsTrigger value="recent" className="flex-1">Recently Active</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="featured" className="pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="bg-gradient-to-br from-white to-blue-50 hover:shadow-md transition-shadow hover:border-blue-200">
+                <CardContent className="p-4 flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-doorrush-light rounded-full flex items-center justify-center mb-3">
+                    <Package className="text-doorrush-primary" size={24} />
+                  </div>
+                  <h3 className="font-semibold mb-1">Package Delivery</h3>
+                  <p className="text-muted-foreground text-sm">Send packages across Eldoret</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-white to-blue-50 hover:shadow-md transition-shadow hover:border-blue-200">
+                <CardContent className="p-4 flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-doorrush-light rounded-full flex items-center justify-center mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-doorrush-primary">
+                      <path d="m21 10-9 4-9-4 9-4 9 4" />
+                      <path d="m3 10 9 4 9-4" />
+                      <path d="M12 14v4" />
+                      <path d="M7 14.5v2" />
+                      <path d="M17 14.5v2" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold mb-1">Shopping Pickup</h3>
+                  <p className="text-muted-foreground text-sm">We'll shop and deliver to you</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-white to-blue-50 hover:shadow-md transition-shadow hover:border-blue-200">
+                <CardContent className="p-4 flex flex-col items-center text-center">
+                  <div className="w-12 h-12 bg-doorrush-light rounded-full flex items-center justify-center mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-doorrush-primary">
+                      <rect width="16" height="20" x="4" y="2" rx="2" />
+                      <line x1="12" x2="12" y1="18" y2="18" />
+                      <line x1="8" x2="8" y1="6" y2="6" />
+                      <line x1="16" x2="16" y1="6" y2="6" />
+                      <line x1="8" x2="8" y1="10" y2="10" />
+                      <line x1="16" x2="16" y1="10" y2="10" />
+                      <line x1="8" x2="8" y1="14" y2="14" />
+                      <line x1="16" x2="16" y1="14" y2="14" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold mb-1">Bill Payments</h3>
+                  <p className="text-muted-foreground text-sm">Pay bills without leaving home</p>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+          
+          <TabsContent value="recent" className="pt-4">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-doorrush-primary border-t-transparent"></div>
+              </div>
+            ) : recentlyActive.length > 0 ? (
+              <div className="space-y-3">
+                {recentlyActive.map(agent => (
+                  <Card key={agent.id} className="bg-gradient-to-br from-white to-blue-50 hover:shadow-md transition-shadow">
+                    <CardContent className="p-4 flex items-center">
+                      <div className="h-10 w-10 bg-muted rounded-full overflow-hidden flex-shrink-0">
+                        {agent.profile_picture ? (
+                          <img
+                            src={agent.profile_picture}
+                            alt={agent.full_name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center bg-doorrush-primary text-white">
+                            {agent.full_name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="ml-3 flex-1">
+                        <p className="font-medium">{agent.full_name}</p>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <span className="flex items-center">
+                            <span className="h-2 w-2 rounded-full bg-green-500 mr-1"></span>
+                            Online
+                          </span>
+                          <span className="mx-2">•</span>
+                          <span>{agent.location}</span>
+                        </div>
+                      </div>
+                      <a href={`tel:${agent.phone_number}`} className="ml-2 p-2 text-muted-foreground hover:text-foreground">
+                        <Phone size={16} />
+                      </a>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No agents are currently online</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </MainLayout>
   );
