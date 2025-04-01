@@ -1,24 +1,28 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, User } from 'lucide-react';
+import { ArrowLeft, Bell, User, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { simpleVibration } from '@/utils/vibrationUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface HeaderProps {
   showBackButton?: boolean;
   title?: string;
+  theme?: string;
+  setTheme?: (theme: string) => void;
 }
 
-const Header = ({ showBackButton = true, title }: HeaderProps) => {
+const Header = ({ showBackButton = true, title, theme, setTheme }: HeaderProps) => {
   const navigate = useNavigate();
   const { customer } = useAuth();
   const [notificationCount, setNotificationCount] = useState(2);
   const [hasNewNotification, setHasNewNotification] = useState(false);
+  const { toast } = useToast();
   
   useEffect(() => {
     // Simulate new notifications - this would be replaced with real data
@@ -49,8 +53,20 @@ const Header = ({ showBackButton = true, title }: HeaderProps) => {
     setHasNewNotification(false);
   };
   
+  const toggleTheme = () => {
+    if (setTheme) {
+      setTheme(theme === "dark" ? "light" : "dark");
+      simpleVibration(50); // Short vibration for theme toggle
+      
+      toast({
+        title: `${theme === "dark" ? "Light" : "Dark"} mode activated`,
+        description: `Switched to ${theme === "dark" ? "light" : "dark"} mode for better visibility`,
+      });
+    }
+  };
+  
   return (
-    <header className="sticky top-0 z-50 bg-white border-b p-4 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b p-4 flex items-center justify-between">
       <div className="flex items-center">
         {showBackButton && (
           <Button 
@@ -70,6 +86,18 @@ const Header = ({ showBackButton = true, title }: HeaderProps) => {
       </div>
       
       <div className="flex items-center gap-2">
+        {/* Dark mode toggle button */}
+        {setTheme && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+          </Button>
+        )}
+        
         <Button 
           variant="ghost" 
           size="icon" 
