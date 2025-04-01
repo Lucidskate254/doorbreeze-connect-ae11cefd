@@ -35,6 +35,7 @@ interface MainLayoutProps {
   showBackButton?: boolean;
   hideHeader?: boolean;
   hideFooter?: boolean;
+  title?: string; // Add title prop
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({
@@ -42,6 +43,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   showBackButton = false,
   hideHeader = false,
   hideFooter = false,
+  title,
 }) => {
   const { logout } = useAuth();
   const location = useLocation();
@@ -91,6 +93,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
       <main className="flex-1 px-4 py-6 md:px-6">
         <div className="max-w-7xl mx-auto">
+          {title && (
+            <h1 className="text-2xl font-bold mb-6">{title}</h1>
+          )}
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {showBackButton && (

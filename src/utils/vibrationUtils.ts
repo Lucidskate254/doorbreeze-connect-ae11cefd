@@ -48,3 +48,14 @@ export const vibrateIfSupported = (pattern: number | number[]): boolean => {
   }
   return false;
 };
+
+/**
+ * Unified vibration function that accepts patterns or durations
+ * Can be used as a drop-in replacement
+ * @param pattern - Vibration pattern or duration
+ */
+export const vibrate = (pattern: number | number[]): void => {
+  if (navigator.vibrate) {
+    navigator.vibrate(pattern);
+  }
+};

@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -39,7 +38,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Check for existing session on load
   useEffect(() => {
     const checkSession = async () => {
       const storedUser = localStorage.getItem("doorrush_customer");
@@ -55,7 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (phone: string, password: string) => {
     setIsLoading(true);
     try {
-      // Check if the phone number exists in the customers table
       const { data: customerData, error: customerError } = await supabase
         .from('customers')
         .select('*')
@@ -66,16 +63,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("User not found or invalid credentials");
       }
       
-      // Very simple password check (in a real app, this would use proper hashing)
       if (customerData.password_hash !== password) {
         throw new Error("Invalid password");
       }
 
-      // Set the customer in state and local storage
       localStorage.setItem("doorrush_customer", JSON.stringify(customerData));
       setCustomer(customerData);
       
-      vibrate([100, 50, 100]); // Success vibration pattern
+      vibrate([100, 50, 100]);
       
       toast({
         title: "Login successful",
@@ -86,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Login error:", error);
       
-      vibrate(500); // Error vibration
+      vibrate(500);
       
       toast({
         title: "Login failed",
@@ -101,7 +96,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (userData: RegisterData) => {
     setIsLoading(true);
     try {
-      // Check if phone number already exists
       const { data: existingUser } = await supabase
         .from('customers')
         .select('id')
@@ -112,10 +106,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Phone number already registered");
       }
 
-      // Generate a random UUID for the customer
       const customerId = crypto.randomUUID();
       
-      // Insert new customer into the database
       const { data, error } = await supabase
         .from('customers')
         .insert({
@@ -123,8 +115,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           full_name: userData.full_name,
           phone_number: userData.phone_number,
           address: userData.address,
-          password_hash: userData.password, // In a real app, this would be properly hashed
-          profile_picture: "" // We'll handle profile picture upload separately
+          password_hash: userData.password,
+          profile_picture: ""
         })
         .select()
         .single();
@@ -134,21 +126,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Error registering account");
       }
 
-      // Handle profile picture upload if provided
       if (userData.profile_picture) {
         const fileExt = userData.profile_picture.name.split('.').pop();
         const fileName = `${customerId}.${fileExt}`;
         
-        // In a real implementation, you'd upload to Supabase storage
-        // For now, we'll just log this
         console.log("Would upload profile picture:", fileName);
       }
 
-      // Set the customer in state and local storage
       localStorage.setItem("doorrush_customer", JSON.stringify(data));
       setCustomer(data);
       
-      vibrate([100, 50, 100]); // Success vibration pattern
+      vibrate([100, 50, 100]);
       
       toast({
         title: "Registration successful",
@@ -159,7 +147,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Registration error:", error);
       
-      vibrate(500); // Error vibration
+      vibrate(500);
       
       toast({
         title: "Registration failed",
@@ -176,7 +164,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setCustomer(null);
     navigate("/login");
     
-    vibrate([50, 30, 50]); // Logout vibration pattern
+    vibrate([50, 30, 50]);
     
     toast({
       title: "Logged out",

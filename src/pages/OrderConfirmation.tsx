@@ -48,7 +48,7 @@ const OrderConfirmation = () => {
   });
 
   return (
-    <MainLayout title="Order Confirmation" showBackButton={false}>
+    <MainLayout showBackButton={false} title="Order Confirmation">
       <div className="max-w-lg mx-auto text-center py-8 animate-fade-in">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-6 animate-pulse-scale">
           <Check className="h-8 w-8 text-green-600" />

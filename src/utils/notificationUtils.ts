@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -73,4 +74,35 @@ export const setupOrderUpdateListener = (orderId: string, onUpdate: (update: any
   return () => {
     supabase.removeChannel(channel);
   };
+};
+
+/**
+ * Hook to check if there are new notifications
+ */
+export const useNotifications = () => {
+  const [hasNewNotifications, setHasNewNotifications] = useState(false);
+  
+  useEffect(() => {
+    // This would typically check a database or API for new notifications
+    // For this demo, we'll just simulate new notifications
+    const checkForNewNotifications = async () => {
+      try {
+        // In a real app, this would be a database call to check for unread notifications
+        // For this demo, we'll create a random chance of new notifications
+        const hasNew = Math.random() > 0.5;
+        setHasNewNotifications(hasNew);
+      } catch (error) {
+        console.error("Error checking notifications:", error);
+      }
+    };
+    
+    checkForNewNotifications();
+    
+    // Check for new notifications periodically
+    const intervalId = setInterval(checkForNewNotifications, 60000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  return { hasNewNotifications };
 };

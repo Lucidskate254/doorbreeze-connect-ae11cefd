@@ -18,15 +18,14 @@ const OrderHistory = () => {
     fetchOrders();
   }, [customer]);
 
-  // Add this function to map database order to our Order type
   const mapDBOrderToOrder = (dbOrder: any): Order => {
     return {
       id: dbOrder.id,
       customer_id: dbOrder.customer_id,
       agent_id: dbOrder.agent_id,
-      service_type: 'Delivery', // Default since this field doesn't exist in DB
+      service_type: 'Delivery',
       delivery_address: dbOrder.delivery_address,
-      status: dbOrder.status as Order['status'], // Type cast to ensure it matches the enum
+      status: dbOrder.status as Order['status'],
       base_charge: dbOrder.amount || 0,
       service_charge: (dbOrder.amount || 0) * 0.1,
       delivery_charge: dbOrder.delivery_fee || 0,
@@ -36,7 +35,6 @@ const OrderHistory = () => {
     };
   };
 
-  // Update your fetchOrders function to use the mapping
   const fetchOrders = async () => {
     setLoading(true);
     try {
@@ -47,7 +45,6 @@ const OrderHistory = () => {
 
       if (error) throw error;
       
-      // Map the data to match our Order type
       const mappedOrders = (data || []).map(mapDBOrderToOrder);
       setOrders(mappedOrders);
     } catch (error) {
@@ -126,9 +123,8 @@ const OrderHistory = () => {
   };
 
   return (
-    <MainLayout title="Order History" showBackButton={true}>
+    <MainLayout showBackButton={true} title="Order History">
       <div className="space-y-6 animate-fade-in">
-        <h1 className="text-2xl font-bold">Order History</h1>
         {renderOrderList()}
       </div>
     </MainLayout>
