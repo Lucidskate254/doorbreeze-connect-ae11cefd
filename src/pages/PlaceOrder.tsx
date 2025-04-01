@@ -357,7 +357,7 @@ const PlaceOrder = () => {
                                   Online
                                 </span>
                                 <span className="mx-2">•</span>
-                                <span>{agent.current_location}</span>
+                                <span>{agent.location}</span>
                                 <span className="mx-2">•</span>
                                 <span>★ {agent.rating}</span>
                               </div>

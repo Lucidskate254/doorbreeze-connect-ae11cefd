@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/MainLayout";
@@ -105,7 +106,7 @@ const OrderDetail = () => {
               phone_number: agentData.phone_number,
               profile_picture: agentData.profile_picture || "",
               online_status: agentData.online_status || false,
-              current_location: agentData.location || "Unknown",
+              location: agentData.location || "Unknown", // Changed from current_location to location
               rating: 4.8, // Default rating
               agent_code: agentData.agent_code,
             };
