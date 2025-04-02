@@ -2,8 +2,25 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Truck, ClipboardList, ChevronRight, Phone } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const Index = () => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  const backgroundImages = [
+    "/lovable-uploads/ae28c793-25cd-428e-879b-1add7982c20a.png",
+    "/lovable-uploads/681c4d9b-d7f5-42fe-b1f3-4ac47ecaa77c.png",
+    "/lovable-uploads/fb1dad1b-428a-401f-bc37-8114217e8ba1.png"
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   return (
     <div className="min-h-screen">
       <header className="bg-white border-b">
@@ -33,9 +50,21 @@ const Index = () => {
       </header>
       
       <main>
-        {/* Hero Section */}
-        <section className="bg-gradient-to-br from-doorrush-light to-background py-16 px-4">
-          <div className="container mx-auto max-w-6xl">
+        {/* Hero Section with Background Image */}
+        <section className="relative py-24 px-4">
+          <div 
+            className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out"
+            style={{ 
+              backgroundImage: `url(${backgroundImages[currentImageIndex]})`,
+              opacity: 0.25,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          ></div>
+          
+          <div className="absolute inset-0 bg-gradient-to-br from-doorrush-primary/20 to-background/95"></div>
+          
+          <div className="container mx-auto max-w-6xl relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
               <div className="text-center md:text-left">
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -58,11 +87,11 @@ const Index = () => {
                   </Link>
                 </div>
               </div>
-              <div className="hidden md:block">
+              <div className="hidden md:flex justify-center items-center">
                 <img 
-                  src="https://placehold.co/600x400/E3F2FD/1E88E5?text=DoorRush+Delivery"
+                  src={backgroundImages[(currentImageIndex + 1) % backgroundImages.length]}
                   alt="DoorRush Delivery"
-                  className="rounded-lg shadow-lg"
+                  className="rounded-lg shadow-lg max-w-sm h-auto object-cover"
                 />
               </div>
             </div>

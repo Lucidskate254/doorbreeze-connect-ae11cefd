@@ -39,7 +39,7 @@ const Footer = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t flex items-center justify-around z-50 h-16 shadow-md">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t flex items-center justify-around z-50 h-16 shadow-lg">
       {navItems.map((item) => {
         const isActive = location.pathname === item.href;
         return (
@@ -49,12 +49,22 @@ const Footer = () => {
             className={cn(
               "flex flex-col items-center justify-center h-full w-1/4 transition-colors",
               isActive 
-                ? "text-blue-600 relative after:content-[''] after:absolute after:bottom-0 after:left-[25%] after:w-1/2 after:h-0.5 after:bg-blue-600" 
+                ? "text-doorrush-primary" 
                 : "text-muted-foreground"
             )}
           >
-            <item.icon size={20} />
-            <span className="text-xs mt-1">{item.title}</span>
+            <div className={cn(
+              "flex flex-col items-center justify-center",
+              isActive && "animate-pulse-scale"
+            )}>
+              <item.icon size={20} className={cn(
+                isActive && "text-doorrush-primary"
+              )} />
+              <span className="text-xs mt-1">{item.title}</span>
+              {isActive && (
+                <span className="absolute bottom-0 w-1/5 h-1 bg-doorrush-primary rounded-t-md"></span>
+              )}
+            </div>
           </button>
         );
       })}
