@@ -1,11 +1,14 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Truck, ClipboardList, ChevronRight, Phone } from "lucide-react";
+import { ShoppingBag, Truck, ClipboardList, ChevronRight, Phone, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
   
   const backgroundImages = [
     "/lovable-uploads/ae28c793-25cd-428e-879b-1add7982c20a.png",
@@ -20,6 +23,22 @@ const Index = () => {
     
     return () => clearInterval(interval);
   }, []);
+  
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast({
+      title: "Phone number copied!",
+      description: "The phone number has been copied to clipboard.",
+    });
+    
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePhoneClick = () => {
+    // You can either open the phone app or copy to clipboard
+    copyToClipboard("+254758301710");
+  };
   
   return (
     <div className="min-h-screen">
@@ -51,14 +70,15 @@ const Index = () => {
       
       <main>
         {/* Hero Section with Background Image */}
-        <section className="relative py-24 px-4">
+        <section className="relative py-24 px-4 overflow-hidden">
           <div 
-            className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out"
+            className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
             style={{ 
               backgroundImage: `url(${backgroundImages[currentImageIndex]})`,
               opacity: 0.25,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
+              transform: `scale(${1 + (currentImageIndex * 0.05)}) translateX(${currentImageIndex * 5}px)`,
             }}
           ></div>
           
@@ -175,7 +195,14 @@ const Index = () => {
               <h3 className="text-xl font-bold mb-4">Contact</h3>
               <p className="text-gray-300">Eldoret, Kenya</p>
               <p className="text-gray-300">info@doorrush.com</p>
-              <p className="text-gray-300">+254 700 000 000</p>
+              <div 
+                className="flex items-center text-gray-300 hover:text-white cursor-pointer transition-colors group"
+                onClick={handlePhoneClick}
+              >
+                <span>+254758301710</span>
+                <Copy size={14} className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {copied && <span className="ml-2 text-xs text-green-400">Copied!</span>}
+              </div>
             </div>
           </div>
           
