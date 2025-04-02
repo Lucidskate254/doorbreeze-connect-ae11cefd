@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,7 +54,6 @@ const Profile = () => {
       const file = e.target.files[0];
       setProfilePicture(file);
       
-      // Create preview
       const reader = new FileReader();
       reader.onload = () => {
         setProfilePreview(reader.result as string);
@@ -65,9 +63,6 @@ const Profile = () => {
   };
   
   const handleSave = () => {
-    // Mock update - will be replaced with Supabase
-    // Update profile in database
-    
     toast({
       title: "Profile updated",
       description: "Your profile has been successfully updated",
@@ -229,7 +224,7 @@ const Profile = () => {
               <Button 
                 variant="outline" 
                 className="w-full justify-start text-left"
-                onClick={() => navigate("/notifications-settings")}
+                onClick={() => navigate("/notification-preferences")}
               >
                 Notification Preferences
               </Button>

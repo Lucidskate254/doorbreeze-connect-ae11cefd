@@ -20,26 +20,58 @@ interface HeaderProps {
 const Header = ({ showBackButton = true, title, theme, setTheme }: HeaderProps) => {
   const navigate = useNavigate();
   const { customer } = useAuth();
-  const [notificationCount, setNotificationCount] = useState(2);
+  const [notificationCount, setNotificationCount] = useState(0);
   const [hasNewNotification, setHasNewNotification] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
-    // Simulate new notifications - this would be replaced with real data
-    const interval = setInterval(() => {
-      // Random chance of new notification for demo purposes
-      if (Math.random() > 0.7) {
-        setNotificationCount(prev => prev + 1);
-        setHasNewNotification(true);
+    // Fetch actual notification count from Supabase or notifications page data
+    const fetchNotificationCount = async () => {
+      try {
+        // For this example, we'll get the count from the orders table as notifications
+        // In a real app, you would have a dedicated notifications table
+        const { data, error } = await supabase
+          .from('orders')
+          .select('id')
+          .order('created_at', { ascending: false });
         
-        // Reset animation after 3 seconds
-        setTimeout(() => {
-          setHasNewNotification(false);
-        }, 3000);
+        if (error) throw error;
+        
+        // Set notification count based on unread items
+        // For demo, we'll count all recent orders as notifications
+        setNotificationCount(data?.length || 0);
+      } catch (error) {
+        console.error("Error fetching notification count:", error);
       }
-    }, 20000);
+    };
     
-    return () => clearInterval(interval);
+    fetchNotificationCount();
+    
+    // Set up real-time listener for new orders/notifications
+    const channel = supabase
+      .channel('orders-changes')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'orders',
+        }, 
+        () => {
+          // Increment notification count when new order is added
+          setNotificationCount(prev => prev + 1);
+          setHasNewNotification(true);
+          
+          // Reset animation after 3 seconds
+          setTimeout(() => {
+            setHasNewNotification(false);
+          }, 3000);
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
   
   const handleBackClick = () => {
@@ -110,16 +142,18 @@ const Header = ({ showBackButton = true, title, theme, setTheme }: HeaderProps) 
           <Bell size={20} className={cn(
             hasNewNotification && "text-doorrush-primary"
           )} />
-          <Badge 
-            className={cn(
-              "absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs",
-              hasNewNotification 
-                ? "bg-doorrush-primary animate-bounce" 
-                : "bg-doorrush-secondary"
-            )}
-          >
-            {notificationCount}
-          </Badge>
+          {notificationCount > 0 && (
+            <Badge 
+              className={cn(
+                "absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs",
+                hasNewNotification 
+                  ? "bg-doorrush-primary animate-bounce" 
+                  : "bg-doorrush-secondary"
+              )}
+            >
+              {notificationCount}
+            </Badge>
+          )}
         </Button>
         
         <Button 
