@@ -9,7 +9,7 @@ import { Agent } from "@/types";
 export const fetchAgents = async (): Promise<Agent[]> => {
   try {
     const { data, error } = await supabase
-      .from('agents')  // Using lowercase "agents"
+      .from('agents')
       .select('id, full_name, phone_number, profile_picture, location, agent_code, online_status')
       .order('online_status', { ascending: false });
     
@@ -47,7 +47,7 @@ export const fetchAgents = async (): Promise<Agent[]> => {
 export const fetchOnlineAgents = async (): Promise<Agent[]> => {
   try {
     const { data, error } = await supabase
-      .from('agents')  // Using lowercase "agents"
+      .from('agents')
       .select('id, full_name, phone_number, profile_picture, location, agent_code, online_status')
       .eq('online_status', true);
     
@@ -103,12 +103,12 @@ export const getRandomOnlineAgent = async (): Promise<Agent | null> => {
  */
 export const subscribeToAgentStatusChanges = (callback: () => void) => {
   const channel = supabase
-    .channel('public:agents')  // Using lowercase "agents" in channel name
+    .channel('public:agents')
     .on('postgres_changes', 
       { 
         event: '*', 
         schema: 'public', 
-        table: 'agents',  // Using lowercase "agents"
+        table: 'agents',
       }, 
       () => {
         console.log('Agent data changed in database');

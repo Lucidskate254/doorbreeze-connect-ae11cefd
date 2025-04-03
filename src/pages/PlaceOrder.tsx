@@ -144,20 +144,30 @@ const PlaceOrder = () => {
       // If auto-assign is enabled, select a random online agent
       if (autoAssign) {
         const randomAgent = await getRandomOnlineAgent();
-        selectedAgentId = randomAgent?.id || null;
+        if (randomAgent) {
+          selectedAgentId = randomAgent.id;
+        } else {
+          // Handle case when no online agents are available
+          throw new Error("No online agents available for auto-assignment");
+        }
       }
+      
+      // Ensure selectedAgentId is properly formatted or null
+      const agentIdForSubmission = selectedAgentId ? selectedAgentId : null;
       
       const orderToSubmit = {
         customer_id: customer?.id || "unknown-customer",
         customer_name: customer?.full_name || "Unknown Customer",
         customer_contact: customer?.phone_number || "Unknown Contact",
-        agent_id: selectedAgentId,
+        agent_id: agentIdForSubmission,
         delivery_address: orderData.deliveryAddress,
         amount: orderData.baseCharge,
         delivery_fee: calculateDeliveryCharge(orderData.deliveryAddress),
         description: orderData.instructions || `${orderData.serviceType} order`,
         status: "Pending"
       };
+      
+      console.log("Submitting order:", orderToSubmit);
       
       const { data, error } = await supabase
         .from('orders')
@@ -166,6 +176,7 @@ const PlaceOrder = () => {
         .single();
       
       if (error) {
+        console.error("Supabase error:", error);
         throw error;
       }
       
