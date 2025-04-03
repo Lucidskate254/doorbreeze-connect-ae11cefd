@@ -95,38 +95,63 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const register = async (userData: RegisterData) => {
+    console.log("Starting registration process with data:", { 
+      ...userData, 
+      password: "****" // Hide password in logs
+    });
+    
     setIsLoading(true);
     try {
       // Check if phone number already exists
-      const { data: existingUser } = await supabase
+      const { data: existingUser, error: checkError } = await supabase
         .from('customers')
         .select('id')
         .eq('phone_number', userData.phone_number)
-        .single();
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Error checking existing user:", checkError);
+        throw new Error("Error checking registration data");
+      }
 
       if (existingUser) {
+        console.log("Phone number already registered:", userData.phone_number);
         throw new Error("Phone number already registered");
       }
 
       // Generate a unique customer ID
       const customerId = crypto.randomUUID();
+      console.log("Generated new customer ID:", customerId);
+      
+      // Prepare data for insertion
+      const customerData = {
+        id: customerId,
+        full_name: userData.full_name,
+        phone_number: userData.phone_number,
+        address: userData.address,
+        password_hash: userData.password,
+        profile_picture: ""
+      };
+      
+      console.log("Attempting to insert customer data:", { 
+        ...customerData, 
+        password_hash: "****" // Hide password in logs 
+      });
       
       // Insert the new customer record
       const { data, error } = await supabase
         .from('customers')
-        .insert({
-          id: customerId,
-          full_name: userData.full_name,
-          phone_number: userData.phone_number,
-          address: userData.address,
-          password_hash: userData.password,
-          profile_picture: ""
-        })
+        .insert(customerData)
         .select()
         .single();
 
       if (error) {
         console.error("Registration database error:", error);
+        toast({
+          title: "Registration failed",
+          description: "Database error: " + error.message,
+          variant: "destructive",
+        });
         throw new Error("Error registering account");
       }
 
