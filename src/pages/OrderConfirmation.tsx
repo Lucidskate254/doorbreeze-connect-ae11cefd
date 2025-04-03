@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Check, Clock, QrCode, Home } from "lucide-react";
 import QRCode from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const OrderConfirmation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [order, setOrder] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
     if (location.state?.orderId) {
@@ -24,6 +27,35 @@ const OrderConfirmation = () => {
         created_at: new Date().toISOString(),
       });
 
+      // Verify order exists in database
+      const checkOrderInDatabase = async () => {
+        try {
+          setIsLoading(true);
+          const { data, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', location.state.orderId)
+            .single();
+            
+          if (error || !data) {
+            console.error("Error verifying order:", error);
+            toast({
+              title: "Order verification failed",
+              description: "Could not verify your order in our system",
+              variant: "destructive",
+            });
+          } else {
+            console.log("Order verified in database:", data);
+          }
+        } catch (err) {
+          console.error("Order verification error:", err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      checkOrderInDatabase();
+
       // Play a notification sound for order placed
       const audio = new Audio('/notification.mp3');
       audio.play().catch(error => {
@@ -32,7 +64,7 @@ const OrderConfirmation = () => {
     } else {
       navigate("/dashboard");
     }
-  }, [location, navigate]);
+  }, [location, navigate, toast]);
 
   if (!order) {
     return null;

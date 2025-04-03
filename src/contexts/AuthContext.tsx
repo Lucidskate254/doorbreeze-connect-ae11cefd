@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -96,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (userData: RegisterData) => {
     setIsLoading(true);
     try {
+      // Check if phone number already exists
       const { data: existingUser } = await supabase
         .from('customers')
         .select('id')
@@ -106,8 +108,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Phone number already registered");
       }
 
+      // Generate a unique customer ID
       const customerId = crypto.randomUUID();
       
+      // Insert the new customer record
       const { data, error } = await supabase
         .from('customers')
         .insert({
@@ -126,13 +130,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Error registering account");
       }
 
+      console.log("Customer registered successfully:", data);
+
+      // Handle profile picture upload if provided
       if (userData.profile_picture) {
         const fileExt = userData.profile_picture.name.split('.').pop();
         const fileName = `${customerId}.${fileExt}`;
         
         console.log("Would upload profile picture:", fileName);
+        // Profile picture upload would go here in a real implementation
       }
 
+      // Set user session
       localStorage.setItem("doorrush_customer", JSON.stringify(data));
       setCustomer(data);
       
@@ -143,6 +152,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "Welcome to DoorRush",
       });
       
+      // Redirect to dashboard after successful registration
       navigate("/dashboard");
     } catch (error) {
       console.error("Registration error:", error);

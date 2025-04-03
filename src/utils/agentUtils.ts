@@ -85,10 +85,14 @@ export const fetchOnlineAgents = async (): Promise<Agent[]> => {
 export const getRandomOnlineAgent = async (): Promise<Agent | null> => {
   try {
     const onlineAgents = await fetchOnlineAgents();
-    if (onlineAgents.length === 0) return null;
+    if (onlineAgents.length === 0) {
+      console.log("No online agents available for random selection");
+      return null;
+    }
     
     // Get random index
     const randomIndex = Math.floor(Math.random() * onlineAgents.length);
+    console.log(`Selected random agent index ${randomIndex} from ${onlineAgents.length} agents`);
     return onlineAgents[randomIndex];
   } catch (error) {
     console.error("Error getting random agent:", error);
