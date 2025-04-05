@@ -82,13 +82,10 @@ const OrderConfirmation = () => {
     );
   }
 
-  // Create a string representation of the order for QR code
+  // Create a string representation of the order's delivery code for QR code
   const orderQRData = JSON.stringify({
     orderId: order.id,
-    serviceType: order.serviceType,
-    deliveryAddress: order.deliveryAddress,
-    amount: order.totalAmount,
-    date: order.created_at,
+    deliveryCode: order.deliveryCode, // Include only the delivery code in QR
   });
 
   return (
@@ -113,8 +110,11 @@ const OrderConfirmation = () => {
             </div>
           </div>
           
-          <p className="text-xs text-muted-foreground mb-4">
-            Show this QR code to your agent for order verification
+          <p className="text-xs text-muted-foreground mb-1">
+            Scan this code to confirm delivery with your agent
+          </p>
+          <p className="font-medium text-sm mb-4">
+            Delivery Code: {order.deliveryCode}
           </p>
           
           <div className="text-left space-y-2 mb-4">

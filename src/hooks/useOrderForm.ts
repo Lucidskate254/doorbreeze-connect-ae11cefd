@@ -13,6 +13,17 @@ import { fetchAgents, subscribeToAgentStatusChanges, getRandomOnlineAgent } from
 import { vibrate } from "@/utils/vibrationUtils";
 import { placeOrder } from "@/services/customerService";
 
+// Helper to generate a random alphanumeric string
+const generateRandomString = (length: number): string => {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    result += characters.charAt(randomIndex);
+  }
+  return result;
+};
+
 export const useOrderForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -132,6 +143,9 @@ export const useOrderForm = () => {
       const deliveryCharge = calculateDeliveryCharge(orderData.deliveryAddress);
       const serviceCharge = calculateServiceCharge(orderData.baseCharge);
       
+      // Generate a unique delivery code
+      const deliveryCode = `ORD-${generateRandomString(6)}`;
+      
       const result = await placeOrder(
         customer.id,
         customer.full_name,
@@ -142,6 +156,7 @@ export const useOrderForm = () => {
           amount: orderData.baseCharge,
           delivery_fee: deliveryCharge,
           description: orderData.instructions || `${orderData.serviceType} order`,
+          delivery_code: deliveryCode // Add the delivery code to the order data
         }
       );
       
@@ -161,7 +176,8 @@ export const useOrderForm = () => {
           orderId: result.orderId,
           orderData: {
             ...orderData,
-            serviceType: orderData.serviceType
+            serviceType: orderData.serviceType,
+            deliveryCode: deliveryCode // Pass the delivery code to the confirmation page
           },
           deliveryCharge,
           serviceCharge,

@@ -87,6 +87,7 @@ export type Database = {
           customer_id: string
           customer_name: string
           delivery_address: string
+          delivery_code: string
           delivery_fee: number | null
           description: string
           id: string
@@ -101,6 +102,7 @@ export type Database = {
           customer_id: string
           customer_name: string
           delivery_address: string
+          delivery_code: string
           delivery_fee?: number | null
           description: string
           id?: string
@@ -115,6 +117,7 @@ export type Database = {
           customer_id?: string
           customer_name?: string
           delivery_address?: string
+          delivery_code?: string
           delivery_fee?: number | null
           description?: string
           id?: string

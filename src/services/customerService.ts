@@ -112,6 +112,7 @@ export const placeOrder = async (
     amount: number;
     delivery_fee: number;
     description: string;
+    delivery_code: string; // Added delivery_code parameter
   }
 ): Promise<{ success: boolean; orderId?: string; error?: string }> => {
   try {
@@ -132,6 +133,7 @@ export const placeOrder = async (
       amount: orderData.amount,
       delivery_fee: orderData.delivery_fee,
       description: orderData.description,
+      delivery_code: orderData.delivery_code, // Add delivery_code to the submitted order
       status: "Pending"
     };
     

@@ -10,6 +10,7 @@ interface OrderSummaryProps {
     instructions: string;
     agentId: string;
     baseCharge: number;
+    deliveryCode?: string; // Added deliveryCode to orderData
   };
   autoAssign: boolean;
   agents: any[];
@@ -51,6 +52,16 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           <span className="text-muted-foreground">Delivery Address</span>
           <span className="font-medium break-words">{orderData.deliveryAddress}</span>
         </div>
+        
+        {orderData.deliveryCode && (
+          <div className={cn(
+            "flex justify-between",
+            isMobile && "flex-col space-y-1"
+          )}>
+            <span className="text-muted-foreground">Order Code</span>
+            <span className="font-medium">{orderData.deliveryCode}</span>
+          </div>
+        )}
         
         {orderData.instructions && (
           <div className="pt-2 border-t">
