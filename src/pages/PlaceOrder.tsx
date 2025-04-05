@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -40,10 +39,10 @@ import {
   calculateTotalAmount,
   Agent
 } from "@/types";
-import { supabase } from "@/integrations/supabase/client";
 import { fetchOnlineAgents, fetchAgents, getRandomOnlineAgent, subscribeToAgentStatusChanges } from "@/utils/agentUtils";
 import { useAuth } from "@/contexts/AuthContext";
 import { vibrate } from "@/utils/vibrationUtils";
+import { placeOrder } from "@/services/customerService";
 
 const PlaceOrder = () => {
   const navigate = useNavigate();
@@ -61,6 +60,7 @@ const PlaceOrder = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [autoAssign, setAutoAssign] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   useEffect(() => {
     const loadAgents = async () => {
@@ -68,7 +68,6 @@ const PlaceOrder = () => {
         setLoading(true);
         setError(null);
         
-        // Fetch all agents to display both online and offline
         const allAgents = await fetchAgents();
         setAgents(allAgents);
       } catch (err) {
@@ -137,46 +136,48 @@ const PlaceOrder = () => {
   };
 
   const handleSubmitOrder = async () => {
+    if (!customer) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to place an order",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
       let selectedAgentId = orderData.agentId;
       
-      // If auto-assign is enabled, select a random online agent
       if (autoAssign) {
         const randomAgent = await getRandomOnlineAgent();
         if (randomAgent) {
           selectedAgentId = randomAgent.id;
         } else {
-          // Handle case when no online agents are available
           throw new Error("No online agents available for auto-assignment");
         }
       }
       
-      // Ensure selectedAgentId is properly formatted or null
-      const agentIdForSubmission = selectedAgentId ? selectedAgentId : null;
+      const deliveryCharge = calculateDeliveryCharge(orderData.deliveryAddress);
+      const serviceCharge = calculateServiceCharge(orderData.baseCharge);
       
-      const orderToSubmit = {
-        customer_id: customer?.id || "unknown-customer",
-        customer_name: customer?.full_name || "Unknown Customer",
-        customer_contact: customer?.phone_number || "Unknown Contact",
-        agent_id: agentIdForSubmission,
-        delivery_address: orderData.deliveryAddress,
-        amount: orderData.baseCharge,
-        delivery_fee: calculateDeliveryCharge(orderData.deliveryAddress),
-        description: orderData.instructions || `${orderData.serviceType} order`,
-        status: "Pending"
-      };
+      const result = await placeOrder(
+        customer.id,
+        customer.full_name,
+        customer.phone_number,
+        {
+          agent_id: selectedAgentId || undefined,
+          delivery_address: orderData.deliveryAddress,
+          amount: orderData.baseCharge,
+          delivery_fee: deliveryCharge,
+          description: orderData.instructions || `${orderData.serviceType} order`,
+        }
+      );
       
-      console.log("Submitting order:", orderToSubmit);
-      
-      const { data, error } = await supabase
-        .from('orders')
-        .insert(orderToSubmit)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
+      if (!result.success) {
+        throw new Error(result.error || "Failed to place order");
       }
       
       vibrate([100, 50, 100]); // Success vibration pattern
@@ -188,17 +189,17 @@ const PlaceOrder = () => {
       
       navigate("/order-confirmation", { 
         state: { 
-          orderId: data.id,
+          orderId: result.orderId,
           orderData: {
             ...orderData,
             serviceType: orderData.serviceType
           },
-          deliveryCharge: calculateDeliveryCharge(orderData.deliveryAddress),
-          serviceCharge: calculateServiceCharge(orderData.baseCharge),
+          deliveryCharge,
+          serviceCharge,
           totalAmount: calculateTotalAmount(
             orderData.baseCharge,
-            calculateServiceCharge(orderData.baseCharge),
-            calculateDeliveryCharge(orderData.deliveryAddress)
+            serviceCharge,
+            deliveryCharge
           )
         } 
       });
@@ -209,9 +210,11 @@ const PlaceOrder = () => {
       
       toast({
         title: "Order submission failed",
-        description: "There was an error placing your order. Please try again.",
+        description: err instanceof Error ? err.message : "There was an error placing your order. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -503,14 +506,16 @@ const PlaceOrder = () => {
               <Button 
                 variant="outline" 
                 onClick={handlePreviousStep}
+                disabled={isSubmitting}
               >
                 Back
               </Button>
               <Button 
                 className="bg-doorrush-primary hover:bg-doorrush-dark"
                 onClick={handleSubmitOrder}
+                disabled={isSubmitting}
               >
-                Confirm Order
+                {isSubmitting ? "Processing..." : "Confirm Order"}
               </Button>
             </CardFooter>
           </Card>

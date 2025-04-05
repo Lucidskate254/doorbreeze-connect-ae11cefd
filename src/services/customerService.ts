@@ -79,7 +79,7 @@ export const uploadProfilePicture = async (userId: string, file: File): Promise<
     
     const { error: uploadError } = await supabase.storage
       .from('profiles')
-      .upload(fileName, file);
+      .upload(fileName, file, { upsert: true });
       
     if (uploadError) {
       console.error("Profile picture upload error:", uploadError);
@@ -99,5 +99,67 @@ export const uploadProfilePicture = async (userId: string, file: File): Promise<
   } catch (error) {
     console.error("Error handling profile picture:", error);
     return null;
+  }
+};
+
+export const placeOrder = async (
+  customerId: string, 
+  customerName: string,
+  customerContact: string,
+  orderData: {
+    agent_id?: string;
+    delivery_address: string;
+    amount: number;
+    delivery_fee: number;
+    description: string;
+  }
+): Promise<{ success: boolean; orderId?: string; error?: string }> => {
+  try {
+    // Validate required fields
+    if (!customerId || !customerName || !customerContact || !orderData.delivery_address) {
+      return { 
+        success: false, 
+        error: "Missing required order information" 
+      };
+    }
+
+    const orderToSubmit = {
+      customer_id: customerId,
+      customer_name: customerName,
+      customer_contact: customerContact,
+      agent_id: orderData.agent_id || null,
+      delivery_address: orderData.delivery_address,
+      amount: orderData.amount,
+      delivery_fee: orderData.delivery_fee,
+      description: orderData.description,
+      status: "Pending"
+    };
+    
+    console.log("Submitting order:", orderToSubmit);
+    
+    const { data, error } = await supabase
+      .from('orders')
+      .insert(orderToSubmit)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Error submitting order:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+    
+    return {
+      success: true,
+      orderId: data.id
+    };
+  } catch (error) {
+    console.error("Unexpected error in placeOrder:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "An unexpected error occurred"
+    };
   }
 };

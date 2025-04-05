@@ -44,6 +44,7 @@ const OrderConfirmation = () => {
               description: "Could not verify your order in our system",
               variant: "destructive",
             });
+            navigate("/dashboard");
           } else {
             console.log("Order verified in database:", data);
           }
@@ -56,18 +57,29 @@ const OrderConfirmation = () => {
       
       checkOrderInDatabase();
 
-      // Play a notification sound for order placed
-      const audio = new Audio('/notification.mp3');
-      audio.play().catch(error => {
-        console.log("Audio playback error (may be expected if user hasn't interacted with page):", error);
-      });
+      // Try to play a notification sound for order placed
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(error => {
+          console.log("Audio playback error (may be expected if user hasn't interacted with page):", error);
+        });
+      } catch (error) {
+        console.log("Audio creation/playback error:", error);
+      }
     } else {
       navigate("/dashboard");
     }
   }, [location, navigate, toast]);
 
   if (!order) {
-    return null;
+    return (
+      <MainLayout showBackButton={false} title="Order Confirmation">
+        <div className="flex items-center justify-center h-64">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-doorrush-primary border-t-transparent"></div>
+          <p className="ml-3">Loading order details...</p>
+        </div>
+      </MainLayout>
+    );
   }
 
   // Create a string representation of the order for QR code

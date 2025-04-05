@@ -3,9 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { RegisterData } from "@/types/auth";
 import { getCustomerById, createCustomerProfile, uploadProfilePicture, updateCustomerProfilePicture } from "./customerService";
 
-export const signInWithPassword = async (phone: string, password: string) => {
+export const signInWithPassword = async (identifier: string, password: string) => {
+  // Check if the identifier is an email format
+  const isEmail = identifier.includes('@');
+  const loginIdentifier = isEmail ? identifier : `${identifier}@doorrush.com`;
+  
   const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email: `${phone}@doorrush.com`, // Using phone as email for Supabase auth
+    email: loginIdentifier,
     password: password,
   });
   
@@ -63,7 +67,11 @@ export const registerUser = async (userData: RegisterData) => {
   }
 
   // Create the auth user first
-  const email = `${userData.phone_number}@doorrush.com`; // Using phone as email for Supabase auth
+  // Check if phone is in email format, if not, use phone number as identifier
+  const isEmail = userData.phone_number.includes('@');
+  const email = isEmail ? userData.phone_number : `${userData.phone_number}@doorrush.com`;
+  
+  console.log("Using identifier for auth:", email);
   
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email: email,
