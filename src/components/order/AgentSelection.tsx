@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioTower, AlertCircle, Info } from "lucide-react";
 import { Agent } from "@/types";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface AgentSelectionProps {
   autoAssign: boolean;
@@ -24,12 +26,20 @@ const AgentSelection: React.FC<AgentSelectionProps> = ({
   loading,
   error,
 }) => {
+  const isMobile = useIsMobile();
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center mb-4">
+      <div className={cn(
+        "flex items-center mb-4",
+        isMobile ? "flex-col gap-2 w-full" : ""
+      )}>
         <Button
           variant={autoAssign ? "default" : "outline"} 
-          className={autoAssign ? "bg-doorrush-primary hover:bg-doorrush-dark" : ""}
+          className={cn(
+            autoAssign ? "bg-doorrush-primary hover:bg-doorrush-dark" : "",
+            isMobile && "w-full"
+          )}
           onClick={onAutoAssignToggle}
         >
           <RadioTower size={16} className="mr-2" />
@@ -37,7 +47,10 @@ const AgentSelection: React.FC<AgentSelectionProps> = ({
         </Button>
         <Button
           variant={!autoAssign ? "default" : "outline"}
-          className={!autoAssign ? "bg-doorrush-primary hover:bg-doorrush-dark ml-2" : "ml-2"}
+          className={cn(
+            !autoAssign ? "bg-doorrush-primary hover:bg-doorrush-dark ml-2" : "ml-2",
+            isMobile && "w-full ml-0"
+          )}
           onClick={onAutoAssignToggle}
         >
           Manual select
@@ -90,15 +103,18 @@ const AgentSelection: React.FC<AgentSelectionProps> = ({
                         </div>
                       )}
                     </div>
-                    <div className="ml-3 flex-1">
-                      <p className="font-medium">{agent.full_name}</p>
-                      <div className="flex items-center text-sm text-muted-foreground">
+                    <div className="ml-3 flex-1 min-w-0">
+                      <p className="font-medium truncate">{agent.full_name}</p>
+                      <div className={cn(
+                        "flex items-center text-sm text-muted-foreground",
+                        isMobile && "flex-wrap"
+                      )}>
                         <span className="flex items-center">
                           <span className={`h-2 w-2 rounded-full ${agent.online_status ? 'bg-green-500' : 'bg-gray-400'} mr-1`}></span>
                           {agent.online_status ? 'Online' : 'Offline'}
                         </span>
                         <span className="mx-2">•</span>
-                        <span>{agent.location}</span>
+                        <span className="truncate">{agent.location}</span>
                         <span className="mx-2">•</span>
                         <span>★ {agent.rating}</span>
                       </div>
