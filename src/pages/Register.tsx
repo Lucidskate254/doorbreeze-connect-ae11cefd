@@ -1,14 +1,16 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Phone, Upload, Eye, EyeOff } from "lucide-react";
+import { Phone, Upload, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ELDORET_LOCATIONS } from "@/types";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -24,7 +26,15 @@ const Register = () => {
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { register, isLoading } = useAuth();
+  const { register, isLoading, isAuthenticated, authError } = useAuth();
+  const navigate = useNavigate();
+
+  // If user is already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -161,6 +171,40 @@ const Register = () => {
   const passwordsMatch = formData.password && formData.confirmPassword && formData.password === formData.confirmPassword;
   const passwordsDontMatch = formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword;
 
+  // Show loading skeleton while checking authentication status
+  if (isLoading && !isSubmitting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-doorrush-light to-background p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Skeleton className="h-12 w-48 mx-auto" />
+            <Skeleton className="h-4 w-64 mx-auto mt-2" />
+          </div>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-7 w-40" />
+              <Skeleton className="h-5 w-64 mt-1" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-5 w-48 mx-auto mt-4" />
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-doorrush-light to-background p-4">
       <div className="w-full max-w-md animate-fade-in">
@@ -181,6 +225,13 @@ const Register = () => {
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
+              {authError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{authError}</AlertDescription>
+                </Alert>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="full_name">Full Name</Label>
                 <Input 
@@ -191,6 +242,7 @@ const Register = () => {
                   onChange={handleInputChange} 
                   className={formErrors.full_name ? "border-red-500" : ""}
                   required 
+                  disabled={isSubmitting}
                 />
                 {formErrors.full_name && (
                   <p className="text-xs text-red-500">{formErrors.full_name}</p>
@@ -208,6 +260,7 @@ const Register = () => {
                   onChange={handleInputChange} 
                   className={formErrors.phone_number ? "border-red-500" : ""}
                   required 
+                  disabled={isSubmitting}
                 />
                 {formErrors.phone_number && (
                   <p className="text-xs text-red-500">{formErrors.phone_number}</p>
@@ -219,6 +272,7 @@ const Register = () => {
                 <Select 
                   onValueChange={handleAddressChange}
                   value={formData.address}
+                  disabled={isSubmitting}
                 >
                   <SelectTrigger className={formErrors.address ? "border-red-500" : ""}>
                     <SelectValue placeholder="Select your location" />
@@ -266,11 +320,13 @@ const Register = () => {
                     onChange={handleInputChange} 
                     required
                     className={`pr-10 ${formErrors.password ? "border-red-500" : ""}`}
+                    disabled={isSubmitting}
                   />
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
                     onClick={toggleShowPassword}
+                    disabled={isSubmitting}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -299,11 +355,13 @@ const Register = () => {
                     onChange={handleInputChange}
                     required
                     className={`pr-10 ${passwordsMatch ? 'border-green-500' : ''} ${passwordsDontMatch || formErrors.confirmPassword ? 'border-red-500' : ''}`}
+                    disabled={isSubmitting}
                   />
                   <button
                     type="button"
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
                     onClick={toggleShowConfirmPassword}
+                    disabled={isSubmitting}
                   >
                     {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -325,7 +383,15 @@ const Register = () => {
                 className="w-full bg-doorrush-primary hover:bg-doorrush-dark" 
                 disabled={isLoading || isSubmitting}
               >
-                {isLoading || isSubmitting ? "Creating account..." : "Create Account"}
+                {isSubmitting ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating account...
+                  </span>
+                ) : "Create Account"}
               </Button>
               <p className="mt-4 text-center text-sm text-muted-foreground">
                 Already have an account?{" "}

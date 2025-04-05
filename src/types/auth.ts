@@ -19,6 +19,7 @@ export type RegisterData = {
 export type AuthContextType = {
   customer: Customer | null;
   isLoading: boolean;
+  authError: string | null;
   isAuthenticated: boolean;
   login: (phone: string, password: string) => Promise<void>;
   logout: () => void;
