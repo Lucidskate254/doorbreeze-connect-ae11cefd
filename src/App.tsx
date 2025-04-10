@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,8 +18,8 @@ import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
 import NotificationPreferences from "./pages/NotificationPreferences";
 import ChangePassword from "./pages/ChangePassword";
-import NotFound from "./pages/ChatWithAgent";
 import FeedbackPage from "./pages/FeedbackPage";
+import ChatPage from "./pages/ChatPage";
 
 const queryClient = new QueryClient();
 
@@ -70,9 +71,10 @@ const AppRoutes = () => {
       <Route path="/notification-preferences" element={<ProtectedRoute>{<NotificationPreferences />}</ProtectedRoute>} />
       <Route path="/change-password" element={<ProtectedRoute>{<ChangePassword />}</ProtectedRoute>} />
       <Route path="/feedback" element={<FeedbackPage />} />
+      <Route path="/chat/:orderId" element={<ProtectedRoute>{<ChatPage />}</ProtectedRoute>} />
       
       {/* Catch-all route */}
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
