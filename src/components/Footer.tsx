@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, Bell, User } from 'lucide-react';
+import { Home, ShoppingBag, Bell, User, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { simpleVibration } from '@/utils/vibrationUtils';
 
@@ -29,6 +28,11 @@ const Footer = () => {
       title: "Profile",
       icon: User,
       href: "/profile",
+    },
+    {
+      title: "Feedback",
+      icon: MessageSquare,
+      href: "/feedback",
     },
   ];
 

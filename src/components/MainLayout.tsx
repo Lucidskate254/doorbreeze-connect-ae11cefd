@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +21,7 @@ import {
   LogOut,
   Bell,
   ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -151,6 +151,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               <Bell className="mr-2 h-5 w-5" />
               <span>Notification Settings</span>
               <ChevronRight className="ml-auto h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="justify-start"
+              onClick={() => handleNavigation("/feedback")}
+            >
+              <MessageSquare className="mr-2 h-5 w-5" />
+              <span>Feedback & Contact</span>
             </Button>
             <Button
               variant="ghost"
