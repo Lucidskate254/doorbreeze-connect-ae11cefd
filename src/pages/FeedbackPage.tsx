@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Phone, MapPin, MessageSquare, Send, Star, HelpCircle, Shield, Clock, Users } from 'lucide-react';
+import { Mail, Phone, MapPin, MessageSquare, Send, Star, HelpCircle, Shield, Clock, Users, Home, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Breadcrumb, 
+  BreadcrumbItem, 
+  BreadcrumbLink, 
+  BreadcrumbList, 
+  BreadcrumbPage, 
+  BreadcrumbSeparator 
+} from '@/components/ui/breadcrumb';
+import MainLayout from '@/components/MainLayout';
 
 export default function FeedbackPage() {
   const [feedbackType, setFeedbackType] = useState('general');
@@ -16,6 +26,8 @@ export default function FeedbackPage() {
   const [message, setMessage] = useState('');
   const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -25,8 +37,19 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold text-center mb-8">Feedback & Contact</h1>
+    <MainLayout title="Feedback & Contact" showBackButton={true}>
+      <Breadcrumb className="mb-4">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink onClick={() => navigate('/dashboard')}>
+              <Home className="h-4 w-4 mr-1 inline" />
+              Home
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbPage>Feedback & Contact</BreadcrumbPage>
+        </BreadcrumbList>
+      </Breadcrumb>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
         <Card>
@@ -280,6 +303,6 @@ export default function FeedbackPage() {
           </p>
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
-} 
+}

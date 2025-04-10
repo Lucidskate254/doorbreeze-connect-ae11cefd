@@ -1,13 +1,15 @@
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { supabase } from '@/utils/supabase/client';
+import { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { getOrderMessages, sendMessageToAgent } from '@/utils/supabase/messages';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Home } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import MainLayout from '@/components/MainLayout';
 
 export default function ChatPage() {
   const { orderId } = useParams();
@@ -16,34 +18,56 @@ export default function ChatPage() {
   const [agentId, setAgentId] = useState('');
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    // Scroll to bottom when messages change
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     // Fetch agent_id from order and set it
     const fetchAgentId = async () => {
       if (!orderId) return;
       
-      const { data, error } = await supabase
-        .from('orders')
-        .select('agent_id')
-        .eq('id', orderId)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching agent ID:', error);
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('agent_id')
+          .eq('id', orderId)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching agent ID:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load agent information',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        if (data && data.agent_id) {
+          console.log("Agent ID found:", data.agent_id);
+          setAgentId(data.agent_id);
+        } else {
+          console.log("No agent assigned to this order");
+          toast({
+            title: 'No agent assigned',
+            description: 'This order doesn\'t have an agent assigned yet',
+            variant: 'destructive',
+          });
+        }
+      } catch (err) {
+        console.error('Exception fetching agent ID:', err);
         toast({
           title: 'Error',
           description: 'Failed to load agent information',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (data && data.agent_id) {
-        setAgentId(data.agent_id);
-      } else {
-        toast({
-          title: 'No agent assigned',
-          description: 'This order doesn\'t have an agent assigned yet',
           variant: 'destructive',
         });
       }
@@ -124,14 +148,50 @@ export default function ChatPage() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const userId = supabase.auth.getUser().then(data => data.data.user?.id);
+  const getUserId = async () => {
+    const { data } = await supabase.auth.getUser();
+    return data.user?.id;
+  };
+
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    getUserId().then(id => {
+      setCurrentUserId(id || null);
+    });
+  }, []);
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader className="sticky top-0 bg-background z-10 pb-4">
-          <SheetTitle>Chat with Agent</SheetTitle>
-        </SheetHeader>
+    <MainLayout title="Chat with Agent" showBackButton={true}>
+      <Breadcrumb className="mb-4">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink onClick={() => navigate('/dashboard')}>
+              <Home className="h-4 w-4 mr-1 inline" />
+              Home
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink onClick={() => navigate('/order-history')}>
+              Orders
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink onClick={() => navigate(`/order/${orderId}`)}>
+              Order Details
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbPage>Chat</BreadcrumbPage>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-md mb-20">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Chat with Agent</h2>
+        </div>
         
         {loading && messages.length === 0 ? (
           <div className="flex justify-center items-center h-[50vh]">
@@ -142,15 +202,15 @@ export default function ChatPage() {
             <p>No messages yet. Start a conversation!</p>
           </div>
         ) : (
-          <div className="space-y-4 mb-16 pt-4">
+          <div className="space-y-4 mb-4 max-h-[60vh] overflow-y-auto p-2">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex ${msg.sender_id === userId ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${msg.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}
               >
                 <div
                   className={`max-w-[80%] p-3 rounded-lg ${
-                    msg.sender_id === userId
+                    msg.sender_id === currentUserId
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted'
                   }`}
@@ -162,10 +222,11 @@ export default function ChatPage() {
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
         )}
         
-        <div className="fixed bottom-4 left-0 right-0 px-4 sm:px-6 flex gap-2">
+        <div className="flex gap-2 mt-4">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -181,13 +242,18 @@ export default function ChatPage() {
           />
           <Button 
             onClick={handleSend} 
-            size="icon" 
             disabled={loading || !input.trim() || !agentId}
           >
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4 mr-2" /> Send
           </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+
+        {!agentId && (
+          <div className="mt-4 p-3 bg-amber-50 text-amber-800 rounded-lg text-sm">
+            No agent has been assigned to this order yet. You will be able to chat once an agent is assigned.
+          </div>
+        )}
+      </div>
+    </MainLayout>
   );
 }
