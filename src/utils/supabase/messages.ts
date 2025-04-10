@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 
 export const sendMessageToAgent = async (
@@ -5,9 +6,16 @@ export const sendMessageToAgent = async (
   receiverId: string,
   message: string
 ) => {
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
+
   const { data, error } = await supabase.from('messages').insert([
     {
-      sender_id: (await supabase.auth.getUser()).data.user?.id,
+      sender_id: userId,
       receiver_id: receiverId,
       order_id: orderId,
       message_text: message,
@@ -16,14 +24,19 @@ export const sendMessageToAgent = async (
 
   if (error) {
     console.error('Error sending message:', error.message);
-    return null;
+    throw error;
   }
 
   return data;
 };
 
 export const getOrderMessages = async (orderId: string) => {
-  const userId = (await supabase.auth.getUser()).data.user?.id;
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
 
   const { data, error } = await supabase
     .from('messages')
@@ -34,7 +47,7 @@ export const getOrderMessages = async (orderId: string) => {
 
   if (error) {
     console.error('Error fetching messages:', error.message);
-    return [];
+    throw error;
   }
 
   return data;
