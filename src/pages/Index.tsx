@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Truck, ClipboardList, ChevronRight, Phone, Copy } from "lucide-react";
@@ -156,8 +155,8 @@ const Index = () => {
           </div>
         </section>
         
-        {/* CTA Section */}
-        <section className="py-16 px-4 bg-doorrush-primary">
+        {/* CTA Section - Add footer-gradient-connector class */}
+        <section className="py-16 px-4 bg-doorrush-primary footer-gradient-connector">
           <div className="container mx-auto max-w-6xl text-center">
             <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
             <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
@@ -173,7 +172,7 @@ const Index = () => {
         </section>
       </main>
       
-      <footer className="bg-gray-800 text-white py-8 px-4">
+      <footer className="bg-gray-800 text-white py-8 px-4 relative">
         <div className="container mx-auto max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>

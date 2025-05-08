@@ -197,3 +197,26 @@ button:hover::after {
     box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
   }
 }
+
+/* Footer gradient transition */
+.footer-gradient-connector {
+  position: relative;
+  overflow: hidden;
+}
+
+.footer-gradient-connector::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 150px;
+  background: linear-gradient(to bottom, transparent, rgba(31, 41, 55, 0.5) 70%, rgb(31, 41, 55) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Dark mode variant */
+.dark .footer-gradient-connector::before {
+  background: linear-gradient(to bottom, transparent, rgba(17, 24, 39, 0.5) 70%, rgb(17, 24, 39) 100%);
+}
