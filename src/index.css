@@ -211,12 +211,66 @@ button:hover::after {
   left: 0;
   right: 0;
   height: 150px;
-  background: linear-gradient(to bottom, transparent, rgba(31, 41, 55, 0.5) 70%, rgb(31, 41, 55) 100%);
+  background: conic-gradient(from 180deg at 50% 100%, transparent 0deg, rgba(31, 41, 55, 0.5) 180deg, rgb(31, 41, 55) 360deg);
   pointer-events: none;
   z-index: 1;
 }
 
 /* Dark mode variant */
 .dark .footer-gradient-connector::before {
-  background: linear-gradient(to bottom, transparent, rgba(17, 24, 39, 0.5) 70%, rgb(17, 24, 39) 100%);
+  background: conic-gradient(from 180deg at 50% 100%, transparent 0deg, rgba(17, 24, 39, 0.5) 180deg, rgb(17, 24, 39) 360deg);
+}
+
+/* Section gradient connector */
+.section-gradient-connector {
+  position: relative;
+  overflow: hidden;
+}
+
+.section-gradient-connector::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* White to blue gradient */
+.white-to-blue::before {
+  background: conic-gradient(from 180deg at 50% 100%, white 0deg, rgba(255, 255, 255, 0.8) 90deg, rgba(243, 244, 246, 0.7) 180deg, rgba(243, 244, 246, 1) 360deg);
+}
+
+/* Blue to primary gradient */
+.blue-to-primary::before {
+  background: conic-gradient(from 180deg at 50% 100%, rgb(243, 244, 246) 0deg, rgba(243, 244, 246, 0.8) 90deg, rgba(59, 130, 246, 0.5) 180deg, rgba(59, 130, 246, 0.8) 360deg);
+}
+
+/* Service card effects */
+.service-card {
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
+  border-radius: 15px;
+  pointer-events: none;
+}
+
+/* Glow effect for buttons */
+.glow-on-hover:hover {
+  box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.7);
+  transition: box-shadow 0.3s ease;
 }

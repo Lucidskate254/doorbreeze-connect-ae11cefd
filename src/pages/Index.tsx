@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Truck, ClipboardList, ChevronRight, Phone, Copy } from "lucide-react";
@@ -69,7 +70,7 @@ const Index = () => {
       
       <main>
         {/* Hero Section with Background Image */}
-        <section className="relative py-24 px-4 overflow-hidden">
+        <section className="relative py-24 px-4 overflow-hidden section-gradient-connector white-to-blue">
           <div 
             className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
             style={{ 
@@ -118,11 +119,11 @@ const Index = () => {
         </section>
         
         {/* Features Section */}
-        <section className="py-16 px-4 bg-white">
+        <section className="py-16 px-4 bg-white section-gradient-connector blue-to-primary">
           <div className="container mx-auto max-w-6xl">
             <h2 className="text-3xl font-bold text-center mb-12">Our Services</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-doorrush-light p-6 rounded-lg text-center">
+              <div className="bg-doorrush-light p-6 rounded-lg text-center service-card">
                 <div className="w-16 h-16 bg-doorrush-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <ShoppingBag size={28} className="text-white" />
                 </div>
@@ -132,7 +133,7 @@ const Index = () => {
                 </p>
               </div>
               
-              <div className="bg-doorrush-light p-6 rounded-lg text-center">
+              <div className="bg-doorrush-light p-6 rounded-lg text-center service-card">
                 <div className="w-16 h-16 bg-doorrush-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <Truck size={28} className="text-white" />
                 </div>
@@ -142,7 +143,7 @@ const Index = () => {
                 </p>
               </div>
               
-              <div className="bg-doorrush-light p-6 rounded-lg text-center">
+              <div className="bg-doorrush-light p-6 rounded-lg text-center service-card">
                 <div className="w-16 h-16 bg-doorrush-primary rounded-full flex items-center justify-center mx-auto mb-4">
                   <ClipboardList size={28} className="text-white" />
                 </div>
@@ -163,7 +164,7 @@ const Index = () => {
               Create an account today and experience the convenience of DoorRush delivery services in Eldoret.
             </p>
             <Link to="/register">
-              <Button size="lg" className="bg-white text-doorrush-primary hover:bg-gray-100">
+              <Button size="lg" className="bg-white text-doorrush-primary hover:bg-gray-100 glow-on-hover">
                 Sign Up Now
                 <ChevronRight size={16} className="ml-2" />
               </Button>
