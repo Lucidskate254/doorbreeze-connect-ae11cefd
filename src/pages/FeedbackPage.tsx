@@ -11,7 +11,6 @@ import {
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
 import MainLayout from '@/components/MainLayout';
-import { AnimatedTestimonialsDemo } from '@/components/ui/AnimatedTestimonialsDemo';
 import { ContactCards } from '@/components/feedback/ContactCards';
 import { WelcomeSection } from '@/components/feedback/WelcomeSection';
 import { FeaturesSection } from '@/components/feedback/FeaturesSection';
@@ -45,8 +44,6 @@ export default function FeedbackPage() {
 
       <FeedbackForm />
       <AccessibilityInfo />
-      
-      <AnimatedTestimonialsDemo />
     </MainLayout>
   );
 }
