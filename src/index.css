@@ -211,14 +211,14 @@ button:hover::after {
   left: 0;
   right: 0;
   height: 150px;
-  background: conic-gradient(from 180deg at 50% 100%, transparent 0deg, rgba(31, 41, 55, 0.5) 180deg, rgb(31, 41, 55) 360deg);
+  background: linear-gradient(to bottom, transparent, rgba(31, 41, 55, 0.5) 70%, rgb(31, 41, 55) 100%);
   pointer-events: none;
   z-index: 1;
 }
 
 /* Dark mode variant */
 .dark .footer-gradient-connector::before {
-  background: conic-gradient(from 180deg at 50% 100%, transparent 0deg, rgba(17, 24, 39, 0.5) 180deg, rgb(17, 24, 39) 360deg);
+  background: linear-gradient(to bottom, transparent, rgba(17, 24, 39, 0.5) 70%, rgb(17, 24, 39) 100%);
 }
 
 /* Section gradient connector */
@@ -240,12 +240,12 @@ button:hover::after {
 
 /* White to blue gradient */
 .white-to-blue::before {
-  background: conic-gradient(from 180deg at 50% 100%, white 0deg, rgba(255, 255, 255, 0.8) 90deg, rgba(243, 244, 246, 0.7) 180deg, rgba(243, 244, 246, 1) 360deg);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(243, 244, 246, 0.7), rgba(243, 244, 246, 1));
 }
 
 /* Blue to primary gradient */
 .blue-to-primary::before {
-  background: conic-gradient(from 180deg at 50% 100%, rgb(243, 244, 246) 0deg, rgba(243, 244, 246, 0.8) 90deg, rgba(59, 130, 246, 0.5) 180deg, rgba(59, 130, 246, 0.8) 360deg);
+  background: linear-gradient(to bottom, rgba(243, 244, 246, 1), rgba(243, 244, 246, 0.8), rgba(59, 130, 246, 0.5));
 }
 
 /* Service card effects */
@@ -273,4 +273,71 @@ button:hover::after {
 .glow-on-hover:hover {
   box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.7);
   transition: box-shadow 0.3s ease;
+}
+
+/* Founder image border animation */
+.founder-image-container {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(30, 136, 229, 0.3);
+}
+
+.founder-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+}
+
+.border-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.border-animation::before {
+  content: '';
+  position: absolute;
+  width: 200%;
+  height: 2px;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 1), transparent);
+  animation: borderFlow 3s linear infinite;
+}
+
+.border-animation::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 200%;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 1), transparent);
+  animation: borderFlow 3s linear infinite 0.5s;
+}
+
+@keyframes borderFlow {
+  0% {
+    top: -100%;
+    left: -100%;
+  }
+  25% {
+    top: 0;
+    left: 100%;
+  }
+  50% {
+    top: 100%;
+    left: 100%;
+  }
+  75% {
+    top: 100%;
+    left: -100%;
+  }
+  100% {
+    top: -100%;
+    left: -100%;
+  }
 }

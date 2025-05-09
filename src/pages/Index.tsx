@@ -118,6 +118,44 @@ const Index = () => {
           </div>
         </section>
         
+        {/* Founder Section */}
+        <section className="py-16 px-4 bg-white">
+          <div className="container mx-auto max-w-6xl">
+            <h2 className="text-3xl font-bold text-center mb-12">Meet Our Founder</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+              <div className="founder-image-container">
+                <img 
+                  src="/lovable-uploads/64ce1a36-da00-4502-959e-1052049e4fa1.png" 
+                  alt="Ryane Munyasa - Founder" 
+                  className="founder-image"
+                />
+                <div className="border-animation"></div>
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-2xl font-bold text-doorrush-primary">Ryane Munyasa</h3>
+                <p className="text-sm text-muted-foreground">Founder & CEO, IT Graduate</p>
+                <p className="text-lg">
+                  Welcome to DoorRush! I started this company with a simple vision - to revolutionize 
+                  delivery services in Eldoret by combining technology with exceptional customer service.
+                </p>
+                <p className="text-lg">
+                  As an IT graduate, I understand the power of technology in solving everyday problems. 
+                  Our platform is designed to be intuitive, fast, and reliable - just like our delivery service.
+                </p>
+                <p className="text-lg">
+                  We're more than just a delivery service; we're your partner in making life easier. 
+                  Join us and experience the convenience of DoorRush today.
+                </p>
+                <Link to="/register">
+                  <Button className="bg-doorrush-primary hover:bg-doorrush-dark mt-4">
+                    Join DoorRush
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+        
         {/* Features Section */}
         <section className="py-16 px-4 bg-white section-gradient-connector blue-to-primary">
           <div className="container mx-auto max-w-6xl">
