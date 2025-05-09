@@ -197,16 +197,16 @@ const Index = () => {
         {/* CTA Section - Add footer-gradient-connector class */}
         <section className="py-16 px-4 bg-doorrush-primary footer-gradient-connector">
           <div className="container mx-auto max-w-6xl text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
-            <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
-              Create an account today and experience the convenience of DoorRush delivery services in Eldoret.
-            </p>
-            <Link to="/register">
+            <Link to="/register" className="mb-8 inline-block">
               <Button size="lg" className="bg-white text-doorrush-primary hover:bg-gray-100 glow-on-hover">
                 Sign Up Now
                 <ChevronRight size={16} className="ml-2" />
               </Button>
             </Link>
+            <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
+            <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
+              Create an account today and experience the convenience of DoorRush delivery services in Eldoret.
+            </p>
           </div>
         </section>
       </main>
