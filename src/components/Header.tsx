@@ -113,7 +113,14 @@ const Header = ({ showBackButton = true, title, theme, setTheme }: HeaderProps) 
         {title ? (
           <h1 className="text-lg font-semibold">{title}</h1>
         ) : (
-          <span className="text-xl font-bold text-doorrush-primary logo-text">DoorRush</span>
+          <span className="text-xl font-bold text-doorrush-primary logo-text flex items-center">
+            <img 
+              src="/lovable-uploads/85078e4d-5626-44e9-8031-b6b48ae03fc9.png" 
+              alt="DoorRush 254 Logo" 
+              className="h-8 mr-2" 
+            />
+            DoorRush 254
+          </span>
         )}
       </div>
       

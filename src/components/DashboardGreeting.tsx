@@ -1,7 +1,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from 'react';
-import { Sun, Sunrise, Flower, City, Moon, Stars } from 'lucide-react';
+import { Sun, Sunrise, Flower, Moon, MapPin, MapPinned } from 'lucide-react';
 
 export const DashboardGreeting = ({ customerName }: { customerName: string | undefined }) => {
   const [greeting, setGreeting] = useState('');
@@ -34,8 +34,8 @@ export const DashboardGreeting = ({ customerName }: { customerName: string | und
       // Pick a random evening emoji
       const eveningEmojis = [
         <Moon size={24} className="text-blue-400" />, 
-        <Stars size={24} className="text-purple-400" />,
-        <City size={24} className="text-indigo-400" />
+        <MapPin size={24} className="text-purple-400" />,
+        <MapPinned size={24} className="text-indigo-400" />
       ];
       emoji = eveningEmojis[Math.floor(Math.random() * eveningEmojis.length)];
     }

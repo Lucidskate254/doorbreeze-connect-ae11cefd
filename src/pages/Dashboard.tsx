@@ -1,16 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import MainLayout from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, LocateFixed, ArrowRight, Clock, Phone } from "lucide-react";
+import { Package, MapPin, ArrowRight, Clock, Phone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchOnlineAgents } from "@/utils/agentUtils";
 import { Agent } from "@/types";
 import { vibrate } from "@/utils/vibrationUtils";
 import { DashboardGreeting } from "@/components/DashboardGreeting";
+import { motion } from "framer-motion";
 
 const Dashboard = () => {
   const { customer } = useAuth();
@@ -49,6 +49,48 @@ const Dashboard = () => {
   return (
     <MainLayout>
       <div className="animate-fade-in">
+        {/* 3D Emblem Logo */}
+        <div className="flex justify-center mb-6">
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 260,
+              damping: 20,
+              duration: 1
+            }}
+            className="relative" 
+          >
+            <motion.img 
+              src="/lovable-uploads/35bccf6c-f632-44dc-a955-1b2180de6ef8.png" 
+              alt="DoorRush 254 3D Emblem"
+              className="h-24 w-24 object-contain"
+              animate={{
+                rotateY: [0, 10, 0, -10, 0],
+                scale: [1, 1.05, 1]
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                repeatType: "loop"
+              }}
+            />
+            <motion.div 
+              className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 h-4 w-16 bg-black/10 rounded-full blur-md dark:bg-white/10"
+              animate={{
+                scaleX: [1, 1.2, 1],
+                opacity: [0.4, 0.6, 0.4]
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                repeatType: "loop"
+              }}
+            />
+          </motion.div>
+        </div>
+        
         <DashboardGreeting customerName={customer?.full_name} />
         
         <Card className="mb-6 bg-gradient-to-r from-doorrush-primary/90 to-blue-400 text-white shadow-lg dark:from-doorrush-primary/80 dark:to-blue-600 dark:text-white">
@@ -72,7 +114,7 @@ const Dashboard = () => {
           <Card className="bg-gradient-to-br from-white to-blue-50 shadow-md border-blue-100 dark:from-gray-800 dark:to-gray-900 dark:border-gray-700">
             <CardContent className="p-6">
               <div className="flex items-center text-doorrush-primary dark:text-blue-300 mb-3">
-                <LocateFixed size={20} className="mr-2" />
+                <MapPin size={20} className="mr-2" />
                 <h3 className="font-semibold">Active Agents</h3>
               </div>
               {isLoading ? (

@@ -21,8 +21,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Camera, Check, Upload, User } from "lucide-react";
+import { Camera, Check, User } from "lucide-react";
 import { ELDORET_LOCATIONS } from "@/types";
+import { motion } from "framer-motion";
 
 const Profile = () => {
   const { customer, logout } = useAuth();
@@ -74,9 +75,51 @@ const Profile = () => {
   return (
     <MainLayout>
       <div className="max-w-2xl mx-auto animate-fade-in">
+        {/* 3D Emblem Logo */}
+        <div className="flex justify-center mb-8">
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{
+              type: "spring",
+              stiffness: 260,
+              damping: 20,
+              duration: 1
+            }}
+            className="relative" 
+          >
+            <motion.img 
+              src="/lovable-uploads/35bccf6c-f632-44dc-a955-1b2180de6ef8.png" 
+              alt="DoorRush 254 3D Emblem"
+              className="h-24 w-24 object-contain"
+              animate={{
+                rotateY: [0, 10, 0, -10, 0],
+                scale: [1, 1.05, 1]
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                repeatType: "loop"
+              }}
+            />
+            <motion.div 
+              className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 h-4 w-16 bg-black/10 rounded-full blur-md dark:bg-white/10"
+              animate={{
+                scaleX: [1, 1.2, 1],
+                opacity: [0.4, 0.6, 0.4]
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                repeatType: "loop"
+              }}
+            />
+          </motion.div>
+        </div>
+        
         <h1 className="text-2xl font-bold mb-6">Your Profile</h1>
         
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -205,7 +248,7 @@ const Profile = () => {
         </Card>
         
         <div className="mt-6">
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
               <CardTitle>Account Settings</CardTitle>
               <CardDescription>

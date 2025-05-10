@@ -45,12 +45,14 @@ const Index = () => {
       <header className="bg-white border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center">
-            <span className="text-2xl font-bold text-doorrush-primary logo-text flex items-center">
-              <span className="bg-doorrush-primary text-white p-1.5 rounded-full mr-2">
-                <Phone size={20} />
-              </span>
-              DoorRush
-            </span>
+            <Link to="/" className="flex items-center">
+              <img 
+                src="/lovable-uploads/85078e4d-5626-44e9-8031-b6b48ae03fc9.png" 
+                alt="DoorRush 254 Logo" 
+                className="h-12 mr-2" 
+              />
+              <span className="text-2xl font-bold text-doorrush-primary">DoorRush 254</span>
+            </Link>
           </div>
           <div className="flex items-center gap-4">
             <Link 
